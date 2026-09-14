@@ -60,8 +60,6 @@ export default async function StepPage({
   const beyondFreeLimit = !hasFullAccess && step.number > FREE_STEP_LIMIT;
 
   const checkedIds = progress.checkpoints.map((c) => c.checkpointId);
-  const requiredIds = step.checkpoints.filter((c) => c.isRequired).map((c) => c.id);
-  const canComplete = requiredIds.every((cid) => checkedIds.includes(cid));
 
   // Étape de prospection : on collecte les signaux qui alimentent la règle
   // d'adaptation « taux de réponse anormalement bas » (section 10).
@@ -118,7 +116,6 @@ export default async function StepPage({
             stepId={step.id}
             checkpoints={step.checkpoints}
             checkedIds={checkedIds}
-            canComplete={canComplete}
             isDone={progress.status === 'done'}
             error={erreur === 'criteres'}
           />

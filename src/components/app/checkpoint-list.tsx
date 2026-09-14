@@ -1,5 +1,6 @@
 'use client';
 
+import { useOptimistic, useState, useTransition } from 'react';
 import { motion, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { completeStep, toggleCheckpoint } from '@/server/actions/journey';
@@ -16,26 +17,67 @@ interface CheckpointRow {
  * que si tous les critères obligatoires sont cochés — et le serveur le
  * revérifie de toute façon.
  *
- * Validation d'une tâche : la case se remplit avec un ressort court, le texte
- * passe en gris et se barre, léger retour haptique sur mobile (section 5.2).
+ * La case se remplit **immédiatement** au clic, sans attendre le serveur : une
+ * validation qui met une seconde à réagir donne l'impression que rien ne s'est
+ * passé. Si l'enregistrement échoue, la case revient en arrière et l'erreur est
+ * affichée — un clic ne doit jamais rester sans réponse.
  */
 export function CheckpointList({
   stepId,
   checkpoints,
   checkedIds,
-  canComplete,
   isDone,
   error,
 }: {
   stepId: string;
   checkpoints: CheckpointRow[];
   checkedIds: string[];
-  canComplete: boolean;
   isDone: boolean;
   error?: boolean;
 }) {
   const reduced = useReducedMotion();
-  const checked = new Set(checkedIds);
+  const [isPending, startTransition] = useTransition();
+  const [failure, setFailure] = useState<string | null>(null);
+
+  const [optimisticChecked, applyOptimistic] = useOptimistic(
+    checkedIds,
+    (current: string[], checkpointId: string) =>
+      current.includes(checkpointId)
+        ? current.filter((id) => id !== checkpointId)
+        : [...current, checkpointId],
+  );
+
+  const checked = new Set(optimisticChecked);
+  const canComplete = checkpoints
+    .filter((checkpoint) => checkpoint.isRequired)
+    .every((checkpoint) => checked.has(checkpoint.id));
+
+  function toggle(checkpointId: string, wasChecked: boolean) {
+    if (isDone) return;
+    setFailure(null);
+
+    if (!wasChecked && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+      navigator.vibrate?.(10);
+    }
+
+    startTransition(async () => {
+      applyOptimistic(checkpointId);
+
+      const formData = new FormData();
+      formData.set('stepId', stepId);
+      formData.set('checkpointId', checkpointId);
+
+      try {
+        await toggleCheckpoint(formData);
+      } catch {
+        // Cas le plus courant : la page a été ouverte avant un redéploiement,
+        // et le serveur ne reconnaît plus l'action. Recharger suffit.
+        setFailure(
+          'Cette validation n’a pas été enregistrée. Recharge la page (Ctrl + Maj + R, ou Cmd + Maj + R sur Mac) et réessaie.',
+        );
+      }
+    });
+  }
 
   return (
     <section className="mt-12 border-t border-beton-300 pt-8">
@@ -49,49 +91,42 @@ export function CheckpointList({
           const isChecked = checked.has(checkpoint.id);
           return (
             <li key={checkpoint.id}>
-              <form action={toggleCheckpoint}>
-                <input type="hidden" name="stepId" value={stepId} />
-                <input type="hidden" name="checkpointId" value={checkpoint.id} />
-                <button
-                  type="submit"
-                  disabled={isDone}
-                  onClick={() => {
-                    if (!isChecked && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-                      navigator.vibrate?.(10);
-                    }
-                  }}
-                  className="flex w-full items-start gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-beton-100 disabled:hover:bg-transparent"
-                  aria-pressed={isChecked}
+              <button
+                type="button"
+                disabled={isDone}
+                onClick={() => toggle(checkpoint.id, isChecked)}
+                className="flex w-full items-start gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-beton-100 disabled:hover:bg-transparent"
+                aria-pressed={isChecked}
+              >
+                <motion.span
+                  initial={false}
+                  animate={{ scale: isChecked && !reduced ? [1, 1.12, 1] : 1 }}
+                  transition={{ duration: reduced ? 0 : 0.32, ease: [0.22, 1, 0.36, 1] }}
+                  className={cn(
+                    'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border text-xs',
+                    isChecked ? 'border-niveau bg-niveau text-white' : 'border-beton-300 bg-blanc',
+                  )}
+                  aria-hidden
                 >
-                  <motion.span
-                    initial={false}
-                    animate={{ scale: isChecked && !reduced ? [1, 1.12, 1] : 1 }}
-                    transition={{ duration: reduced ? 0 : 0.32, ease: [0.22, 1, 0.36, 1] }}
-                    className={cn(
-                      'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border text-xs',
-                      isChecked ? 'border-niveau bg-niveau text-white' : 'border-beton-300 bg-blanc',
-                    )}
-                    aria-hidden
-                  >
-                    {isChecked ? '✓' : ''}
-                  </motion.span>
-                  <span
-                    className={cn(
-                      'text-base',
-                      isChecked ? 'text-beton-600 line-through' : 'text-encre',
-                    )}
-                  >
-                    {checkpoint.label}
-                    {!checkpoint.isRequired ? (
-                      <span className="ml-2 text-xs text-beton-600">facultatif</span>
-                    ) : null}
-                  </span>
-                </button>
-              </form>
+                  {isChecked ? '✓' : ''}
+                </motion.span>
+                <span className={cn('text-base', isChecked ? 'text-beton-600 line-through' : 'text-encre')}>
+                  {checkpoint.label}
+                  {!checkpoint.isRequired ? (
+                    <span className="ml-2 text-xs text-beton-600">facultatif</span>
+                  ) : null}
+                </span>
+              </button>
             </li>
           );
         })}
       </ul>
+
+      {failure ? (
+        <p className="prose-buildr mt-4 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
+          {failure}
+        </p>
+      ) : null}
 
       {error ? (
         <p className="mt-4 text-sm text-encre">
@@ -105,7 +140,7 @@ export function CheckpointList({
       ) : (
         <form action={completeStep} className="mt-6">
           <input type="hidden" name="stepId" value={stepId} />
-          <Button type="submit" variant="signal" size="lg" disabled={!canComplete}>
+          <Button type="submit" variant="signal" size="lg" disabled={!canComplete || isPending}>
             J’ai terminé
           </Button>
           {!canComplete ? (
