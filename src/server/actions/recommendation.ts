@@ -13,9 +13,7 @@ import { askAI } from '@/lib/ai/client';
 import { stripForbiddenClaims } from '@/lib/guardrails';
 import { instantiateJourney } from '@/server/journey';
 import { rejectionSchema } from '@/lib/validation/onboarding';
-
-/** Deux refus : au troisième passage, on propose de reprendre l'onboarding. */
-export const MAX_REJECTIONS = 2;
+import { MAX_REJECTIONS } from '@/lib/recommendation-policy';
 
 /**
  * Calcule et enregistre les recommandations. Le classement est déterministe :

@@ -1,7 +1,7 @@
 'use client';
 
+import { useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
-import { motion, useReducedMotion } from 'motion/react';
 import { cn, formatMinutes } from '@/lib/utils';
 
 type StepStatus = 'locked' | 'available' | 'in_progress' | 'done';
@@ -29,8 +29,18 @@ interface PathPhase {
  * dans l'app (section 5.2).
  */
 export function PathView({ phases, currentStepId }: { phases: PathPhase[]; currentStepId: string | null }) {
-  const reduced = useReducedMotion();
   const ordered = [...phases].reverse();
+  const currentRef = useRef<HTMLLIElement>(null);
+
+  /*
+   * Le chemin monte : les étapes à venir sont au-dessus. On ouvre donc la page
+   * sur l'étape en cours, pas en haut du mur d'étapes verrouillées —
+   * l'utilisateur ne doit jamais avoir à chercher où il en est. Positionnement
+   * immédiat, sans animation : la navigation doit rester instantanée.
+   */
+  useLayoutEffect(() => {
+    currentRef.current?.scrollIntoView({ block: 'center', behavior: 'auto' });
+  }, []);
 
   return (
     <div className="mt-10 space-y-10">
@@ -92,15 +102,7 @@ export function PathView({ phases, currentStepId }: { phases: PathPhase[]; curre
               );
 
               return (
-                <motion.li
-                  key={step.id}
-                  initial={false}
-                  animate={
-                    isCurrent && !reduced
-                      ? { scale: 1 }
-                      : { scale: 1 }
-                  }
-                >
+                <li key={step.id} ref={isCurrent ? currentRef : undefined}>
                   {locked ? (
                     <div aria-disabled className="cursor-default opacity-70">
                       {content}
@@ -110,7 +112,7 @@ export function PathView({ phases, currentStepId }: { phases: PathPhase[]; curre
                       {content}
                     </Link>
                   )}
-                </motion.li>
+                </li>
               );
             })}
           </ol>

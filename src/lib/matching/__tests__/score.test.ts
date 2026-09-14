@@ -191,6 +191,49 @@ describe('scoreBusiness — score', () => {
     expect(behavior?.weight).toBeGreaterThan(0.8);
   });
 
+  it('ne pénalise pas un business qui déclare plusieurs niches applicables', () => {
+    // Deux business identiques, sauf que le second s'applique à plus de
+    // niches. La largeur est un avantage pour l'utilisateur : elle ne doit pas
+    // faire baisser le score quand l'intérêt commun est le même.
+    const étroit: ScorableBusiness = {
+      ...ugc,
+      tags: [...ugc.tags.filter((t) => t.dimension !== 'interests'), { dimension: 'interests', key: 'fitness', weight: 1 }],
+    };
+    const large: ScorableBusiness = {
+      ...ugc,
+      id: 'b-large',
+      slug: 'agence-ugc-large',
+      tags: [
+        ...ugc.tags.filter((t) => t.dimension !== 'interests'),
+        { dimension: 'interests', key: 'fitness', weight: 1 },
+        { dimension: 'interests', key: 'beauty', weight: 1 },
+        { dimension: 'interests', key: 'food', weight: 1 },
+        { dimension: 'interests', key: 'fashion', weight: 1 },
+      ],
+    };
+
+    const a = scoreBusiness(baseProfile, étroit);
+    const b = scoreBusiness(baseProfile, large);
+    if (a.eliminated || b.eliminated) throw new Error('inattendu');
+
+    const interestOf = (r: typeof a) => r.breakdown.find((d) => d.dimension === 'interests')?.score ?? 0;
+    // Un écart subsiste — couvrir 1 niche sur 4 laisse moins d'options que
+    // couvrir la seule niche déclarée — mais il reste modéré au lieu d'être
+    // proportionnel au nombre de niches listées.
+    expect(interestOf(b)).toBeGreaterThan(0.7);
+    expect(interestOf(a) - interestOf(b)).toBeLessThanOrEqual(0.2);
+  });
+
+  it('distingue clairement un intérêt commun de l’absence totale d’intérêt', () => {
+    const avec = scoreBusiness(baseProfile, ugc);
+    const sans = scoreBusiness({ ...baseProfile, interests: ['real_estate'] }, ugc);
+    if (avec.eliminated || sans.eliminated) throw new Error('inattendu');
+
+    const interestOf = (r: typeof avec) => r.breakdown.find((d) => d.dimension === 'interests')?.score ?? 0;
+    expect(interestOf(avec)).toBeGreaterThan(0.6);
+    expect(interestOf(sans)).toBeLessThan(0.35);
+  });
+
   it('reste calculable pour un business sans aucun tag', () => {
     const bare: ScorableBusiness = { ...ugc, tags: [], weights: {} };
     const result = scoreBusiness(baseProfile, bare);

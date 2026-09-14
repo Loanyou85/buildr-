@@ -86,7 +86,18 @@ export function scoreInterests(profile: ScoringProfile, business: ScorableBusine
   const owned = new Set(profile.interests);
   const matched = tags.filter((t) => owned.has(t.key));
   const matchedWeight = totalWeight(matched);
-  const base = totalWeight(tags) === 0 ? 0.5 : clamp01(matchedWeight / totalWeight(tags));
+  const declaredWeight = totalWeight(tags);
+
+  /*
+   * Ce qui compte est d'avoir au moins une niche viable, pas d'en couvrir
+   * la totalité. Une simple proportion pénaliserait un business qui déclare
+   * beaucoup de niches applicables — or la largeur est un avantage pour
+   * l'utilisateur, pas un défaut. Un seul intérêt commun suffit donc à
+   * atteindre un bon score, les suivants l'affinent.
+   */
+  const coverage = declaredWeight === 0 ? 0 : matchedWeight / declaredWeight;
+  const base =
+    matched.length === 0 ? 0.2 : clamp01(0.6 + 0.4 * Math.min(1, coverage * 2));
   const score = boost(base, signal(profile, 'interest_alignment'));
 
   const reason =

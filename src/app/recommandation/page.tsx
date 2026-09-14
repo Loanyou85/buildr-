@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/server/auth';
 import { db } from '@/server/db';
-import { computeRecommendations, MAX_REJECTIONS } from '@/server/actions/recommendation';
+import { computeRecommendations } from '@/server/actions/recommendation';
+import { MAX_REJECTIONS } from '@/lib/recommendation-policy';
 import { RecommendationView } from '@/components/app/recommendation-view';
 import { DIMENSION_LABELS, type DimensionScore } from '@/lib/matching/types';
 import { formatEuros } from '@/lib/utils';
@@ -93,10 +94,14 @@ export default async function RecommendationPage({
         summary: primary.businessModel.summary,
         rationale: primary.rationale ?? '',
         score: Math.round(primary.score),
+        // On sélectionne les dimensions qui ont le plus pesé dans la décision
+        // (contribution = score × poids), mais on les affiche triées par
+        // score : c'est le pourcentage montré à l'écran, il doit décroître.
         breakdown: breakdown
           .filter((d) => d.weight > 0.04)
           .sort((a, b) => b.contribution - a.contribution)
           .slice(0, 5)
+          .sort((a, b) => b.score - a.score)
           .map((d) => ({ label: DIMENSION_LABELS[d.dimension], score: Math.round(d.score * 100), reason: d.reason })),
       }}
       facts={facts}

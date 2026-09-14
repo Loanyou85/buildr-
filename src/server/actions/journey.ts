@@ -11,12 +11,17 @@ import { milestoneSchema, outreachSchema } from '@/lib/validation/onboarding';
 import { canSharePublicly } from '@/lib/guardrails';
 import { slugify } from '@/lib/utils';
 
+/**
+ * L'étape doit appartenir au parcours de l'utilisateur. Une étape absente
+ * (lien périmé, parcours supprimé) renvoie à l'écran du jour plutôt que de
+ * produire une erreur : le produit répond toujours « voici quoi faire ».
+ */
 async function stepProgressFor(userId: string, stepId: string) {
   const progress = await db.stepProgress.findFirst({
     where: { stepId, userJourney: { userId } },
     include: { userJourney: true, checkpoints: true },
   });
-  if (!progress) throw new Error('Étape introuvable pour cet utilisateur');
+  if (!progress) redirect('/app');
   return progress;
 }
 
@@ -78,10 +83,11 @@ export async function completeStep(formData: FormData): Promise<void> {
   const user = await requireUser();
   const stepId = String(formData.get('stepId') ?? '');
 
-  const step = await db.step.findUniqueOrThrow({
+  const step = await db.step.findUnique({
     where: { id: stepId },
     include: { checkpoints: true },
   });
+  if (!step) redirect('/app');
   const progress = await stepProgressFor(user.id, stepId);
 
   const requiredIds = step.checkpoints.filter((c) => c.isRequired).map((c) => c.id);

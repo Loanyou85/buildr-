@@ -55,9 +55,14 @@ export default async function TodayPage() {
         <p className="text-sm text-beton-600">{today.businessName}</p>
       </div>
 
+      {/*
+        L'objectif du jour est le titre de l'étape : court, orienté action,
+        lisible d'un coup d'œil. La phrase d'objectif complète vit sur l'écran
+        de l'étape, là où elle sert. Ici, on préfère le vide à l'info en plus.
+      */}
       <div className="mt-8">
         <p className="text-sm text-beton-600">Ton objectif</p>
-        <h1 className="mt-1 text-2xl">{today.step.goal}</h1>
+        <h1 className="mt-1 text-2xl">{today.step.title}</h1>
       </div>
 
       {today.adjustment ? <AdjustmentCard id={today.adjustment.id} suggestion={today.adjustment.suggestion} /> : null}

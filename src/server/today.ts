@@ -18,6 +18,7 @@ export interface TodayView {
     estimatedMinutes: number;
     status: StepStatus;
   };
+
   tasks: DailyTask[];
   estimatedMinutes: number;
   remainingAfter: number;
