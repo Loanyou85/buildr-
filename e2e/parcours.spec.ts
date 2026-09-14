@@ -1,7 +1,7 @@
 import { expect, test, type BrowserContext } from '@playwright/test';
 import { cleanupUser, completeProfile, createSignedInUser, db } from './fixtures';
 
-const EMAIL = 'e2e-parcours@buildr.test';
+const EMAIL = 'e2e-parcours@nexteo.test';
 
 async function signIn(context: BrowserContext, sessionToken: string) {
   await context.addCookies([
@@ -104,7 +104,7 @@ test.describe('Le chemin, de bout en bout', () => {
   });
 
   test('la progression ne recule jamais', async ({ page, context }) => {
-    const email = 'e2e-progression@buildr.test';
+    const email = 'e2e-progression@nexteo.test';
     const { user, sessionToken } = await createSignedInUser({ email, pro: true });
     await completeProfile(user.id);
     await signIn(context, sessionToken);
@@ -137,7 +137,7 @@ test.describe('Le chemin, de bout en bout', () => {
   });
 
   test('un mineur de moins de 16 ans est refusé et son compte supprimé', async ({ page, context }) => {
-    const email = 'e2e-mineur@buildr.test';
+    const email = 'e2e-mineur@nexteo.test';
     const { user, sessionToken } = await createSignedInUser({ email });
     await signIn(context, sessionToken);
 
@@ -155,7 +155,7 @@ test.describe('Le chemin, de bout en bout', () => {
   });
 
   test('l’onboarding sauvegarde à chaque réponse et reprend où on s’est arrêté', async ({ page, context }) => {
-    const email = 'e2e-onboarding@buildr.test';
+    const email = 'e2e-onboarding@nexteo.test';
     const { user, sessionToken } = await createSignedInUser({ email });
     await signIn(context, sessionToken);
 

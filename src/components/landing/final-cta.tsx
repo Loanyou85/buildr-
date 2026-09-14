@@ -12,7 +12,7 @@ export function FinalCta() {
         <h2 className="font-display text-4xl font-extrabold leading-[1.02] tracking-[-0.02em]">
           Ton business. Construis-le.
         </h2>
-        <p className="prose-buildr mx-auto mt-6 text-lg text-white/70">
+        <p className="prose-nexteo mx-auto mt-6 text-lg text-white/70">
           Commence par le diagnostic. En une quinzaine de minutes, tu sauras quelle activité te
           correspond et quelle est ta première étape.
         </p>

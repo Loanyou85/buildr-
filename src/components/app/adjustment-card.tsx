@@ -23,7 +23,7 @@ export function AdjustmentCard({ id, suggestion }: { id: string; suggestion: str
       className="mt-8 rounded-card border border-acier/30 bg-acier-50 p-5"
     >
       <p className="text-sm font-medium text-acier">Une amélioration à faire sur cette étape</p>
-      <p className="prose-buildr mt-2 text-sm text-encre">{suggestion}</p>
+      <p className="prose-nexteo mt-2 text-sm text-encre">{suggestion}</p>
       <div className="mt-4 flex flex-wrap gap-2">
         <form action={acceptAdjustment}>
           <input type="hidden" name="adjustmentId" value={id} />

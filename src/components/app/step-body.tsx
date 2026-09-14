@@ -48,7 +48,7 @@ export function StepBody({ subSteps, resources }: { subSteps: SubStepRow[]; reso
               {subStep.title}
             </h2>
 
-            <Markdown className="prose-buildr mt-3 text-sm text-beton-600" content={subStep.body} />
+            <Markdown className="prose-nexteo mt-3 text-sm text-beton-600" content={subStep.body} />
 
             <ol className="mt-5 space-y-4">
               {subStep.actions.map((action) => (
@@ -57,9 +57,9 @@ export function StepBody({ subSteps, resources }: { subSteps: SubStepRow[]; reso
                     {action.order}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="prose-buildr text-base text-encre">{action.instruction}</p>
+                    <p className="prose-nexteo text-base text-encre">{action.instruction}</p>
                     {action.example ? (
-                      <p className="prose-buildr mt-1.5 border-l-2 border-beton-300 pl-3 text-sm text-beton-600">
+                      <p className="prose-nexteo mt-1.5 border-l-2 border-beton-300 pl-3 text-sm text-beton-600">
                         Exemple : {action.example}
                       </p>
                     ) : null}
@@ -93,7 +93,7 @@ export function StepBody({ subSteps, resources }: { subSteps: SubStepRow[]; reso
                 </summary>
                 <div className="border-t border-beton-300 px-5 py-4">
                   {resource.body ? (
-                    <pre className="prose-buildr overflow-x-auto whitespace-pre-wrap font-sans text-sm text-beton-600">
+                    <pre className="prose-nexteo overflow-x-auto whitespace-pre-wrap font-sans text-sm text-beton-600">
                       {resource.body}
                     </pre>
                   ) : null}

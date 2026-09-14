@@ -1,4 +1,4 @@
-// Buildr — schéma de données (section 6 du cahier des charges).
+// Nexteo — schéma de données (section 6 du cahier des charges).
 // Règle structurante : les parcours ne sont jamais codés en dur dans le
 // front-end. Ajouter un business model ou un parcours est une insertion en
 // base, jamais une modification de code.

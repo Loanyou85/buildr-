@@ -3,7 +3,8 @@ import { runSeed } from './seed/run';
 
 const db = new PrismaClient();
 
-runSeed(db)
+// `npm run db:seed -- --force` réécrit aussi les parcours déjà démarrés.
+runSeed(db, { force: process.argv.includes('--force') })
   .then(async (summary) => {
     console.info(
       `Référentiel : ${summary.skills} compétences, ${summary.interests} intérêts, ${summary.milestones} jalons, ${summary.featureFlags} feature flags.`,

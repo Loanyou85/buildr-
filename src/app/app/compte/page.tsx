@@ -77,7 +77,7 @@ export default async function AccountPage({
 
       <section className="mt-10">
         <h2 className="text-lg text-encre">Ton aventure publique</h2>
-        <p className="prose-buildr mt-2 text-sm text-beton-600">
+        <p className="prose-nexteo mt-2 text-sm text-beton-600">
           Tu choisis librement ce que tu partages. Rien n’est publié tant que tu ne l’actives pas, et tu
           peux retirer la publication à tout moment.
         </p>
@@ -121,7 +121,7 @@ export default async function AccountPage({
       <section className="mt-10">
         <h2 className="text-lg text-encre">Tes données</h2>
         <div className="mt-4 rounded-card border border-beton-300 bg-blanc p-5">
-          <p className="prose-buildr text-sm text-beton-600">
+          <p className="prose-nexteo text-sm text-beton-600">
             Consentement donné le {user.consentAcceptedAt ? formatDateFr(user.consentAcceptedAt) : '—'}
             {user.consentVersion ? ` (version ${user.consentVersion})` : ''}. Données hébergées dans
             l’Union européenne, conservées {user.dataRetentionMonths} mois après ta dernière activité.
@@ -136,7 +136,7 @@ export default async function AccountPage({
 
       <section className="mt-10">
         <h2 className="text-lg text-encre">Supprimer le compte</h2>
-        <p className="prose-buildr mt-2 text-sm text-beton-600">
+        <p className="prose-nexteo mt-2 text-sm text-beton-600">
           Tout est effacé : profil, réponses, parcours, progression, jalons. C’est définitif et immédiat.
         </p>
         {erreur === 'confirmation' ? (

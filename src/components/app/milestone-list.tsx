@@ -113,8 +113,8 @@ export function MilestoneList({
         })}
       </ol>
 
-      <p className="prose-buildr mt-8 text-xs text-beton-600">
-        Les montants que tu notes sont déclaratifs. Buildr ne les vérifie pas et ne les présente jamais
+      <p className="prose-nexteo mt-8 text-xs text-beton-600">
+        Les montants que tu notes sont déclaratifs. Nexteo ne les vérifie pas et ne les présente jamais
         comme vérifiés.
       </p>
     </div>

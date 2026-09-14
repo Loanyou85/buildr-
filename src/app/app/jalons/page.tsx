@@ -36,7 +36,7 @@ export default async function MilestonesPage({
   return (
     <AppShell active="/app/jalons" aside={<AssistantLauncher stepId={userJourney?.currentStepId ?? null} />}>
       <h1 className="text-2xl">Tes jalons</h1>
-      <p className="prose-buildr mt-3 text-base text-beton-600">
+      <p className="prose-nexteo mt-3 text-base text-beton-600">
         Quatre moments comptent vraiment. Tu les enregistres quand ils arrivent, avec ou sans montant. Ce
         que tu notes reste privé tant que tu ne publies pas ton aventure.
       </p>

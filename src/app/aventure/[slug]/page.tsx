@@ -64,7 +64,7 @@ export default async function AdventurePage({ params }: { params: Promise<{ slug
         {adventure.story ? (
           <section className="mt-8">
             <h2 className="text-lg text-encre">Son histoire</h2>
-            <p className="prose-buildr mt-3 whitespace-pre-wrap text-base text-encre">{adventure.story}</p>
+            <p className="prose-nexteo mt-3 whitespace-pre-wrap text-base text-encre">{adventure.story}</p>
           </section>
         ) : null}
 
@@ -106,8 +106,8 @@ export default async function AdventurePage({ params }: { params: Promise<{ slug
           </section>
         ) : null}
 
-        <p className="prose-buildr mt-12 text-xs text-beton-600">
-          Les montants indiqués sont déclarés par la personne elle-même. Buildr ne les vérifie pas.
+        <p className="prose-nexteo mt-12 text-xs text-beton-600">
+          Les montants indiqués sont déclarés par la personne elle-même. Nexteo ne les vérifie pas.
         </p>
       </main>
     </div>

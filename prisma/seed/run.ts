@@ -36,7 +36,17 @@ const SEED_LOCK_ID = 8_142_026;
  *    ligne. Un parcours de 22 étapes passe de plusieurs centaines de requêtes à
  *    une dizaine : c'est ce qui le fait tenir dans la durée d'une fonction.
  */
-export async function runSeed(db: PrismaClient): Promise<SeedSummary> {
+export interface SeedOptions {
+  /**
+   * Réécrit aussi les parcours déjà démarrés par un utilisateur. Leur
+   * progression est alors perdue : c'est le prix d'une mise à jour du contenu,
+   * et c'est pour ça que ce n'est jamais le comportement par défaut.
+   */
+  force?: boolean;
+}
+
+export async function runSeed(db: PrismaClient, options: SeedOptions = {}): Promise<SeedSummary> {
+  const force = options.force ?? false;
   return db.$transaction(
     async (tx) => {
       // Le verrou est lié à la transaction : il est relâché à la fin, même en
@@ -47,10 +57,10 @@ export async function runSeed(db: PrismaClient): Promise<SeedSummary> {
       await seedBusinessModels(tx);
 
       const journeys: SeedSummary['journeys'] = [];
-      journeys.push(await seedJourney(tx, 'agence-ugc', ugcJourney));
-      journeys.push(await seedJourney(tx, 'agence-ugc', ugcJourneyLowBudget));
+      journeys.push(await seedJourney(tx, 'agence-ugc', ugcJourney, force));
+      journeys.push(await seedJourney(tx, 'agence-ugc', ugcJourneyLowBudget, force));
       for (const [slug, seed] of Object.entries(STARTER_JOURNEYS)) {
-        journeys.push(await seedJourney(tx, slug, seed));
+        journeys.push(await seedJourney(tx, slug, seed, force));
       }
 
       const withoutJourney = await tx.businessModel.findMany({
@@ -118,6 +128,7 @@ async function seedJourney(
   tx: Tx,
   businessSlug: string,
   seed: JourneySeed,
+  force: boolean,
 ): Promise<SeedSummary['journeys'][number]> {
   const business = await tx.businessModel.findUniqueOrThrow({ where: { slug: businessSlug } });
 
@@ -131,9 +142,11 @@ async function seedJourney(
     include: { userJourneys: { select: { id: true } } },
   });
 
-  // Un parcours déjà démarré par un utilisateur n'est jamais supprimé : on
+  // Un parcours déjà démarré par un utilisateur n'est pas touché : on
   // publierait une nouvelle version plutôt que d'effacer sa progression.
-  if (existing && existing.userJourneys.length > 0) {
+  // `force` lève cette protection, pour les cas où le contenu lui-même doit
+  // être corrigé — un changement de nom de marque, par exemple.
+  if (existing && existing.userJourneys.length > 0 && !force) {
     return { name: seed.name, phases: 0, steps: 0, actions: 0, skipped: true };
   }
   if (existing) {

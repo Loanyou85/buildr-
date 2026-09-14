@@ -30,28 +30,28 @@ describe('résolution de l’URL du site', () => {
   });
 
   it('utilise AUTH_URL quand elle est renseignée', () => {
-    setEnv({ AUTH_URL: 'https://buildr.app' });
-    expect(siteUrl()).toBe('https://buildr.app');
+    setEnv({ AUTH_URL: 'https://nexteo.app' });
+    expect(siteUrl()).toBe('https://nexteo.app');
   });
 
   it('ajoute le protocole quand la plateforme ne donne que l’hôte', () => {
-    setEnv({ VERCEL_URL: 'buildr-abc123.vercel.app' });
-    expect(siteUrl()).toBe('https://buildr-abc123.vercel.app');
+    setEnv({ VERCEL_URL: 'nexteo-abc123.vercel.app' });
+    expect(siteUrl()).toBe('https://nexteo-abc123.vercel.app');
   });
 
   it('retombe sur la variable suivante quand la première est vide', () => {
-    setEnv({ AUTH_URL: '', VERCEL_URL: 'buildr-abc123.vercel.app' });
-    expect(siteUrl()).toBe('https://buildr-abc123.vercel.app');
+    setEnv({ AUTH_URL: '', VERCEL_URL: 'nexteo-abc123.vercel.app' });
+    expect(siteUrl()).toBe('https://nexteo-abc123.vercel.app');
   });
 
   it('ne conserve que l’origine, sans chemin résiduel', () => {
-    setEnv({ AUTH_URL: 'https://buildr.app/app/' });
-    expect(siteUrl()).toBe('https://buildr.app');
+    setEnv({ AUTH_URL: 'https://nexteo.app/app/' });
+    expect(siteUrl()).toBe('https://nexteo.app');
   });
 
   it('compose une URL absolue utilisable dans un e-mail', () => {
-    setEnv({ AUTH_URL: 'https://buildr.app' });
-    expect(absoluteUrl('/app')).toBe('https://buildr.app/app');
-    expect(absoluteUrl('app')).toBe('https://buildr.app/app');
+    setEnv({ AUTH_URL: 'https://nexteo.app' });
+    expect(absoluteUrl('/app')).toBe('https://nexteo.app/app');
+    expect(absoluteUrl('app')).toBe('https://nexteo.app/app');
   });
 });

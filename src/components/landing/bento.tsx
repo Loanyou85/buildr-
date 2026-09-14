@@ -20,7 +20,7 @@ const PILLARS = [
   },
   {
     title: 'Un parcours qui s’ajuste',
-    body: 'Si ta prospection ne répond pas, Buildr le détecte et te ramène sur ton offre. Présenté comme une amélioration, jamais comme un retour en arrière.',
+    body: 'Si ta prospection ne répond pas, Nexteo le détecte et te ramène sur ton offre. Présenté comme une amélioration, jamais comme un retour en arrière.',
     className: '',
   },
 ];
@@ -40,7 +40,7 @@ export function Bento() {
               className={`group rounded-card border border-white/10 bg-white/[0.03] p-6 transition-[transform,border-color] duration-[180ms] hover:-translate-y-1 hover:border-acier ${pillar.className}`}
             >
               <h3 className="font-display text-lg font-bold tracking-[-0.02em] text-white">{pillar.title}</h3>
-              <p className="prose-buildr mt-3 text-sm text-white/60">{pillar.body}</p>
+              <p className="prose-nexteo mt-3 text-sm text-white/60">{pillar.body}</p>
             </article>
           ))}
         </div>

@@ -196,12 +196,12 @@ export const phase5: PhaseSeed = {
         {
           title: 'Marquer le jalon',
           body: [
-            'Tu viens de signer ton premier client. Dans Buildr, ce moment est un jalon : tu peux l’enregistrer, avec ou sans montant.',
+            'Tu viens de signer ton premier client. Dans Nexteo, ce moment est un jalon : tu peux l’enregistrer, avec ou sans montant.',
             '',
             'Ce que tu déclares est affiché comme **déclaré par toi**, jamais comme vérifié. Tu choisis librement ce que tu partages, et tu peux ne rien partager du tout.',
           ].join('\n'),
           actions: [
-            { instruction: 'Enregistre le jalon « premier client » dans Buildr.' },
+            { instruction: 'Enregistre le jalon « premier client » dans Nexteo.' },
             { instruction: 'Ajoute le montant si tu le souhaites. Ce champ est facultatif et reste privé tant que tu ne publies pas ton aventure.' },
           ],
         },

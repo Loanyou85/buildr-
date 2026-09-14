@@ -17,7 +17,7 @@ export interface AssistantContext {
 }
 
 const SYSTEM = [
-  'Tu es l’assistance de Buildr. Tu accompagnes une personne sur UNE étape précise de son parcours de création d’entreprise.',
+  'Tu es l’assistance de Nexteo. Tu accompagnes une personne sur UNE étape précise de son parcours de création d’entreprise.',
   '',
   'Règles absolues :',
   '- Tu réponds UNIQUEMENT sur l’étape en cours et son contenu, qui t’est fourni intégralement.',

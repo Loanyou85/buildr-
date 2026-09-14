@@ -95,7 +95,7 @@ export function Scrollytelling() {
                     initial={false}
                     animate={{ opacity: index === active ? 1 : 0, height: index === active ? 'auto' : 0 }}
                     transition={{ duration: reduced ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
-                    className="prose-buildr overflow-hidden text-sm text-white/60"
+                    className="prose-nexteo overflow-hidden text-sm text-white/60"
                   >
                     <span className="block pt-2">{screen.caption}</span>
                   </motion.p>

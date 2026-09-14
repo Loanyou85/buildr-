@@ -29,7 +29,7 @@ export default async function AdminPage() {
   return (
     <>
       <h1 className="text-2xl">Parcours</h1>
-      <p className="prose-buildr mt-2 text-sm text-beton-600">
+      <p className="prose-nexteo mt-2 text-sm text-beton-600">
         Un business model porte plusieurs parcours, selon le budget et le niveau. Ajouter un parcours ne
         demande aucune modification de code.
       </p>

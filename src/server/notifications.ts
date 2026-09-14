@@ -127,7 +127,7 @@ export async function sendDueNotifications(now: Date = new Date()): Promise<{ se
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: process.env.EMAIL_FROM ?? 'Buildr <bonjour@buildr.app>',
+          from: process.env.EMAIL_FROM ?? 'Nexteo <bonjour@nexteo.app>',
           to: notification.user.email,
           subject: payload.title,
           text: `${payload.body}\n\n${absoluteUrl(payload.url)}`,

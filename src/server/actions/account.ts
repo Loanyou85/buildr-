@@ -44,7 +44,7 @@ export async function exportMyData(): Promise<string> {
   return JSON.stringify(
     {
       exportedAt: new Date().toISOString(),
-      note: 'Export intégral de tes données Buildr, conformément à ton droit d’accès et de portabilité.',
+      note: 'Export intégral de tes données Nexteo, conformément à ton droit d’accès et de portabilité.',
       data,
     },
     null,

@@ -7,7 +7,7 @@ export async function GET() {
     return new Response(json, {
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
-        'Content-Disposition': `attachment; filename="buildr-mes-donnees-${new Date().toISOString().slice(0, 10)}.json"`,
+        'Content-Disposition': `attachment; filename="nexteo-mes-donnees-${new Date().toISOString().slice(0, 10)}.json"`,
       },
     });
   } catch {

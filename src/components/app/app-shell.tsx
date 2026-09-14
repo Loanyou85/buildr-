@@ -26,7 +26,7 @@ export function AppShell({
       <header className="sticky top-0 z-30 border-b border-beton-300 bg-blanc/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between gap-4 px-5">
           <Link href="/app" className="font-display text-base font-bold tracking-[-0.02em] text-encre">
-            BUILDR
+            NEXTEO
           </Link>
           <nav className="flex items-center gap-1">
             {LINKS.map((link) => (

@@ -33,7 +33,7 @@ export default async function TodayPage() {
       <AppShell active="/app" aside={<AssistantLauncher stepId={null} />}>
         <p className="text-sm text-beton-600">{today.businessName}</p>
         <h1 className="mt-2 text-2xl">Tu as terminé le parcours.</h1>
-        <p className="prose-buildr mt-3 text-base text-beton-600">
+        <p className="prose-nexteo mt-3 text-base text-beton-600">
           Tu es allé au bout des {today.progressPercent} % du chemin. La suite se construit sur ce que tu
           as mis en place : regarde tes jalons et ce que tu veux consolider.
         </p>

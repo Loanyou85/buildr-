@@ -184,7 +184,7 @@ export const phase6: PhaseSeed = {
             { instruction: 'Note la date d’échéance de ta facture dans ton tableau.' },
             { instruction: 'À J+7 après l’échéance, relance par e-mail, simplement.', example: 'Bonjour [prénom], petit rappel pour la facture [numéro] échue le [date]. Pouvez-vous me confirmer la date de règlement ?' },
             { instruction: 'À J+15, relance par téléphone. Un appel règle en deux minutes ce que trois e-mails ne règlent pas.' },
-            { instruction: 'Quand le paiement arrive, enregistre le jalon « premier revenu » dans Buildr. Le montant reste déclaratif et privé tant que tu ne publies rien.' },
+            { instruction: 'Quand le paiement arrive, enregistre le jalon « premier revenu » dans Nexteo. Le montant reste déclaratif et privé tant que tu ne publies rien.' },
           ],
         },
         {

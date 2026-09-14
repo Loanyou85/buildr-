@@ -5,7 +5,7 @@ export function MagicLinkEmail({ url }: { url: string }) {
   return (
     <Html lang="fr">
       <Head />
-      <Preview>Ton lien pour continuer sur Buildr</Preview>
+      <Preview>Ton lien pour continuer sur Nexteo</Preview>
       <Body style={{ backgroundColor: '#F4F6F8', fontFamily: 'system-ui, sans-serif', margin: 0 }}>
         <Container style={{ backgroundColor: '#FFFFFF', borderRadius: 16, margin: '40px auto', maxWidth: 480, padding: 32 }}>
           <Text style={{ color: '#101828', fontSize: 20, fontWeight: 700, margin: '0 0 8px' }}>

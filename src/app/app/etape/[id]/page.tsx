@@ -82,19 +82,19 @@ export default async function StepPage({
       </div>
 
       <h1 className="mt-4 text-2xl">{step.title}</h1>
-      <p className="prose-buildr mt-3 text-lg text-encre">{step.goal}</p>
+      <p className="prose-nexteo mt-3 text-lg text-encre">{step.goal}</p>
 
       <section className="mt-6 rounded-card border border-beton-300 bg-blanc p-5">
         <p className="text-sm font-medium text-encre">Pourquoi cette étape</p>
-        <p className="prose-buildr mt-2 text-sm text-beton-600">{step.why}</p>
+        <p className="prose-nexteo mt-2 text-sm text-beton-600">{step.why}</p>
       </section>
 
       {beyondFreeLimit ? (
         <section className="mt-10 rounded-card border border-beton-300 bg-blanc p-6">
           <p className="text-lg text-encre">Cette étape fait partie du parcours complet</p>
-          <p className="prose-buildr mt-2 text-sm text-beton-600">
+          <p className="prose-nexteo mt-2 text-sm text-beton-600">
             Les {FREE_STEP_LIMIT} premières étapes sont accessibles librement. La suite du parcours, avec
-            ses scripts, ses templates et l’assistance sur chaque étape, fait partie de Buildr Pro.
+            ses scripts, ses templates et l’assistance sur chaque étape, fait partie de Nexteo Pro.
           </p>
           <p className="mt-4 text-sm text-beton-600">
             Tu gardes ta progression et tes {step.number - 1} étapes déjà ouvertes, quoi qu’il arrive.

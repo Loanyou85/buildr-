@@ -36,7 +36,7 @@ export default async function AdventuresPage() {
       <header className="border-b border-beton-300 bg-blanc">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-5">
           <Link href="/" className="font-display text-base font-bold tracking-[-0.02em] text-encre">
-            BUILDR
+            NEXTEO
           </Link>
           <Button asChild variant="outline" size="sm">
             <Link href="/connexion">Commencer</Link>
@@ -46,7 +46,7 @@ export default async function AdventuresPage() {
 
       <main className="mx-auto max-w-4xl px-5 py-12">
         <h1 className="text-3xl">Les aventures</h1>
-        <p className="prose-buildr mt-4 text-lg text-beton-600">
+        <p className="prose-nexteo mt-4 text-lg text-beton-600">
           Des parcours réels, partagés par ceux qui les construisent. Point de départ, activité choisie,
           étapes franchies, difficultés rencontrées. Chacun choisit ce qu’il montre.
         </p>
@@ -55,7 +55,7 @@ export default async function AdventuresPage() {
           <EmptyState
             className="mt-12"
             title="Aucune aventure publiée pour l’instant."
-            description="Buildr n’affiche que des parcours réels. Tant que personne n’a partagé le sien, cette page reste vide — et la première aventure publiée sera la tienne si tu le souhaites."
+            description="Nexteo n’affiche que des parcours réels. Tant que personne n’a partagé le sien, cette page reste vide — et la première aventure publiée sera la tienne si tu le souhaites."
             action={
               <Button asChild variant="outline" size="sm">
                 <Link href="/connexion">Commencer mon aventure</Link>

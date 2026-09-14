@@ -52,7 +52,7 @@ export default async function LandingPage() {
 
       <header className="absolute inset-x-0 top-0 z-30">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <span className="font-display text-base font-bold tracking-[0.02em] text-white">BUILDR</span>
+          <span className="font-display text-base font-bold tracking-[0.02em] text-white">NEXTEO</span>
           <nav className="flex items-center gap-5">
             <Link href="/aventures" className="text-sm text-white/60 transition-colors hover:text-white">
               Les aventures
@@ -79,9 +79,9 @@ export default async function LandingPage() {
 
       <footer className="border-t border-white/10 bg-plan-900 py-10 text-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5">
-          <span className="font-display text-sm font-bold tracking-[0.02em] text-white/70">BUILDR</span>
+          <span className="font-display text-sm font-bold tracking-[0.02em] text-white/70">NEXTEO</span>
           <p className="text-xs text-white/40">
-            Buildr n’est pas une promesse de revenu. C’est un parcours d’exécution.
+            Nexteo n’est pas une promesse de revenu. C’est un parcours d’exécution.
           </p>
         </div>
       </footer>

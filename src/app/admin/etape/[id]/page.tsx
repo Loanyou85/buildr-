@@ -86,7 +86,7 @@ export default async function AdminStepPage({ params }: { params: Promise<{ id: 
                 <span className="tabular mr-2 text-beton-300">{subStep.order}.</span>
                 {subStep.title}
               </p>
-              <pre className="prose-buildr mt-2 whitespace-pre-wrap font-sans text-xs text-beton-600">
+              <pre className="prose-nexteo mt-2 whitespace-pre-wrap font-sans text-xs text-beton-600">
                 {subStep.body}
               </pre>
 
@@ -177,7 +177,7 @@ export default async function AdminStepPage({ params }: { params: Promise<{ id: 
                 <span className="text-sm text-encre">{resource.title}</span>
               </div>
               {resource.body ? (
-                <pre className="prose-buildr mt-2 whitespace-pre-wrap font-sans text-xs text-beton-600">
+                <pre className="prose-nexteo mt-2 whitespace-pre-wrap font-sans text-xs text-beton-600">
                   {resource.body}
                 </pre>
               ) : null}

@@ -21,7 +21,7 @@ export function EmptyState({
       )}
     >
       <p className="text-lg text-encre">{title}</p>
-      <p className="prose-buildr text-sm text-beton-600">{description}</p>
+      <p className="prose-nexteo text-sm text-beton-600">{description}</p>
       {action}
     </div>
   );

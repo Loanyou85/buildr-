@@ -3,17 +3,17 @@
 import { motion, useReducedMotion } from 'motion/react';
 
 /**
- * Tableau comparatif (pattern 7) : Buildr à gauche, « faire seul » à droite,
+ * Tableau comparatif (pattern 7) : Nexteo à gauche, « faire seul » à droite,
  * ligne par ligne, révélé au scroll. Aucune comparaison avec un concurrent
  * nommé, aucune promesse de résultat.
  */
-const ROWS: Array<{ subject: string; buildr: string; alone: string }> = [
-  { subject: 'Choisir une activité', buildr: 'Un moteur croise onze dimensions et explique son choix', alone: 'Des heures de vidéos et une intuition' },
-  { subject: 'Savoir quoi faire aujourd’hui', buildr: 'Une étape, trois actions, un temps estimé', alone: 'Une liste de choses à faire qui s’allonge' },
-  { subject: 'Le niveau de détail', buildr: 'Chaque action exécutable, avec sa règle et son exemple', alone: '« Il faut créer du contenu »' },
-  { subject: 'Savoir si c’est validé', buildr: 'Des critères à cocher avant de débloquer la suite', alone: 'Le doute permanent' },
-  { subject: 'Quand ça coince', buildr: 'Le parcours détecte et propose un ajustement', alone: 'On persévère dans ce qui ne marche pas' },
-  { subject: 'La progression', buildr: 'Une barre qui ne recule jamais', alone: 'L’impression de tourner en rond' },
+const ROWS: Array<{ subject: string; nexteo: string; alone: string }> = [
+  { subject: 'Choisir une activité', nexteo: 'Un moteur croise onze dimensions et explique son choix', alone: 'Des heures de vidéos et une intuition' },
+  { subject: 'Savoir quoi faire aujourd’hui', nexteo: 'Une étape, trois actions, un temps estimé', alone: 'Une liste de choses à faire qui s’allonge' },
+  { subject: 'Le niveau de détail', nexteo: 'Chaque action exécutable, avec sa règle et son exemple', alone: '« Il faut créer du contenu »' },
+  { subject: 'Savoir si c’est validé', nexteo: 'Des critères à cocher avant de débloquer la suite', alone: 'Le doute permanent' },
+  { subject: 'Quand ça coince', nexteo: 'Le parcours détecte et propose un ajustement', alone: 'On persévère dans ce qui ne marche pas' },
+  { subject: 'La progression', nexteo: 'Une barre qui ne recule jamais', alone: 'L’impression de tourner en rond' },
 ];
 
 export function Comparison() {
@@ -31,7 +31,7 @@ export function Comparison() {
             <thead>
               <tr className="text-sm text-white/50">
                 <th className="w-1/4 pb-4 font-normal" />
-                <th className="w-2/5 pb-4 font-medium text-white">Avec Buildr</th>
+                <th className="w-2/5 pb-4 font-medium text-white">Avec Nexteo</th>
                 <th className="pb-4 font-normal">En construisant seul</th>
               </tr>
             </thead>
@@ -46,7 +46,7 @@ export function Comparison() {
                   className="border-t border-white/10 align-top"
                 >
                   <td className="py-4 pr-4 text-sm text-white/50">{row.subject}</td>
-                  <td className="py-4 pr-4 text-sm text-white">{row.buildr}</td>
+                  <td className="py-4 pr-4 text-sm text-white">{row.nexteo}</td>
                   <td className="py-4 text-sm text-white/40">{row.alone}</td>
                 </motion.tr>
               ))}

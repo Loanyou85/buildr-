@@ -8,7 +8,7 @@ const QUESTIONS: Array<{ question: string; answer: string }> = [
   {
     question: 'Est-ce que c’est une formation ?',
     answer:
-      'Non. Il n’y a aucune vidéo à regarder, aucun module à suivre. Buildr te donne une activité adaptée à ta situation, puis un parcours d’exécution : à chaque étape, tu lis ce qu’il faut faire, tu le fais, tu valides, tu avances.',
+      'Non. Il n’y a aucune vidéo à regarder, aucun module à suivre. Nexteo te donne une activité adaptée à ta situation, puis un parcours d’exécution : à chaque étape, tu lis ce qu’il faut faire, tu le fais, tu valides, tu avances.',
   },
   {
     question: 'Qu’est-ce que je dois savoir faire pour commencer ?',
@@ -21,9 +21,9 @@ const QUESTIONS: Array<{ question: string; answer: string }> = [
       'Tu déclares le temps dont tu disposes, et le plan du jour est calé dessus. Le parcours UGC, par exemple, mène au premier client en une trentaine d’étapes, dont la plupart tiennent en moins d’une heure. Le rythme dépend de toi, pas d’un calendrier imposé.',
   },
   {
-    question: 'Est-ce que Buildr promet un résultat ?',
+    question: 'Est-ce que Nexteo promet un résultat ?',
     answer:
-      'Non, et c’est délibéré. Aucun écran, aucune notification, aucun texte ne promet un revenu ou une rapidité de gain. Ce que Buildr garantit, c’est de toujours te dire quoi faire ensuite, et de te faire valider chaque étape avant la suivante.',
+      'Non, et c’est délibéré. Aucun écran, aucune notification, aucun texte ne promet un revenu ou une rapidité de gain. Ce que Nexteo garantit, c’est de toujours te dire quoi faire ensuite, et de te faire valider chaque étape avant la suivante.',
   },
   {
     question: 'Qu’est-ce qui se passe si l’activité proposée ne me plaît pas ?',
@@ -77,7 +77,7 @@ export function Faq() {
                     transition={{ duration: reduced ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
                     className="overflow-hidden"
                   >
-                    <p className="prose-buildr pb-5 text-sm text-white/60">{item.answer}</p>
+                    <p className="prose-nexteo pb-5 text-sm text-white/60">{item.answer}</p>
                   </motion.div>
                 ) : null}
               </AnimatePresence>

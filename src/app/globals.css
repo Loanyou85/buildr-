@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 /*
- * Buildr — tokens de design (section 4 du cahier des charges).
+ * Nexteo — tokens de design (section 4 du cahier des charges).
  * Une seule couleur vive existe dans l'application : --signal.
  * Elle signifie « c'est ça que tu dois faire maintenant » et n'apparaît
  * qu'une seule fois par écran d'app.
@@ -55,7 +55,7 @@
   --text-4xl--line-height: 1.02;
 
   /* Easing partagé — section 5 */
-  --ease-buildr: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-nexteo: cubic-bezier(0.22, 1, 0.36, 1);
 
   --radius-card: 1rem;
 }
@@ -107,7 +107,7 @@
   }
 
   /* Longueur de ligne sous 70 caractères. */
-  .prose-buildr {
+  .prose-nexteo {
     max-width: 68ch;
   }
 

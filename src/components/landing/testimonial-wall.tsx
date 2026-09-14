@@ -23,8 +23,8 @@ export function TestimonialWall({ entries }: { entries: WallEntry[] }) {
           <h2 className="font-display text-3xl font-extrabold leading-[1.08] tracking-[-0.02em]">
             Aucune aventure partagée pour l’instant.
           </h2>
-          <p className="prose-buildr mx-auto mt-5 text-base text-white/60">
-            Buildr n’affiche que des parcours réels. Tant que personne n’a publié le sien, cet espace
+          <p className="prose-nexteo mx-auto mt-5 text-base text-white/60">
+            Nexteo n’affiche que des parcours réels. Tant que personne n’a publié le sien, cet espace
             reste vide — et c’est volontaire. La première aventure publiée sera peut-être la tienne.
           </p>
           <Link
@@ -47,7 +47,7 @@ export function TestimonialWall({ entries }: { entries: WallEntry[] }) {
         <h2 className="font-display text-3xl font-extrabold leading-[1.08] tracking-[-0.02em]">
           Des aventures réelles
         </h2>
-        <p className="prose-buildr mt-4 text-base text-white/60">
+        <p className="prose-nexteo mt-4 text-base text-white/60">
           Publiées par ceux qui les construisent. Chacun choisit ce qu’il montre.
         </p>
 
@@ -64,7 +64,7 @@ export function TestimonialWall({ entries }: { entries: WallEntry[] }) {
                         className="block rounded-card border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-acier"
                       >
                         <p className="text-sm text-white/50">{entry.business}</p>
-                        <p className="prose-buildr mt-2 text-sm text-white/80">{entry.excerpt}</p>
+                        <p className="prose-nexteo mt-2 text-sm text-white/80">{entry.excerpt}</p>
                         <p className="mt-3 text-xs text-white/40">{entry.name}</p>
                       </Link>
                     ))}

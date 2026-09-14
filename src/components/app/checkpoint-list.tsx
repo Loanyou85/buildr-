@@ -123,7 +123,7 @@ export function CheckpointList({
       </ul>
 
       {failure ? (
-        <p className="prose-buildr mt-4 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
+        <p className="prose-nexteo mt-4 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
           {failure}
         </p>
       ) : null}

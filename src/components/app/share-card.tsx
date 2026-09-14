@@ -31,7 +31,7 @@ export function ShareCard({
       `${milestoneLabel} — ${businessName ?? 'mon activité'}`,
       declaredValue !== null ? `${formatEuros(declaredValue)} (${DECLARED_LABEL.toLowerCase()})` : null,
       formatDateFr(new Date(reachedAt)),
-      'Construit étape par étape avec Buildr.',
+      'Construit étape par étape avec Nexteo.',
     ]
       .filter(Boolean)
       .join('\n');
@@ -52,7 +52,7 @@ export function ShareCard({
         className="relative overflow-hidden rounded-card bg-plan-900 px-8 py-10 text-white"
       >
         <div className="glow-acier pointer-events-none absolute -right-20 -top-20 size-64" aria-hidden />
-        <p className="relative font-display text-xs font-bold tracking-[0.12em] text-white/60">BUILDR</p>
+        <p className="relative font-display text-xs font-bold tracking-[0.12em] text-white/60">NEXTEO</p>
         <p className="relative mt-6 font-display text-2xl font-bold tracking-[-0.02em]">{milestoneLabel}</p>
         {businessName ? <p className="relative mt-1 text-sm text-white/70">{businessName}</p> : null}
         {declaredValue !== null ? (

@@ -1,4 +1,4 @@
-# Buildr
+# Nexteo
 
 **Ton business. Construis-le.**
 

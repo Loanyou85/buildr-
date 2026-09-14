@@ -1,4 +1,4 @@
-# Buildr — architecture
+# Nexteo — architecture
 
 **Ton business. Construis-le.** Un SaaS qui emmène une personne de « je veux créer une
 entreprise » à « j'ai construit mon entreprise ». Le produit n'est pas l'IA, c'est le chemin.

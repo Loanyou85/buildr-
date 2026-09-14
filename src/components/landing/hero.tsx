@@ -56,7 +56,7 @@ export function Hero() {
               Construis-le.
             </motion.h1>
 
-            <motion.p {...appear(2)} className="prose-buildr mt-6 text-lg text-white/70">
+            <motion.p {...appear(2)} className="prose-nexteo mt-6 text-lg text-white/70">
               Découvre l’activité qui te correspond, puis suis un parcours étape par étape pour la
               construire.
             </motion.p>

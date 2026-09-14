@@ -12,7 +12,7 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: 'Buildr — Ton business. Construis-le.',
+  title: 'Nexteo — Ton business. Construis-le.',
   description:
     'Découvre l’activité qui te correspond, puis suis un parcours étape par étape pour la construire.',
   metadataBase: new URL(siteUrl()),

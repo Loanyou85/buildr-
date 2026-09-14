@@ -19,7 +19,7 @@ const adminEmails = (process.env.ADMIN_EMAILS ?? '')
 const providers: NextAuthConfig['providers'] = [
   Resend({
     apiKey: process.env.AUTH_RESEND_KEY ?? 'dev-noop',
-    from: process.env.EMAIL_FROM ?? 'Buildr <bonjour@buildr.app>',
+    from: process.env.EMAIL_FROM ?? 'Nexteo <bonjour@nexteo.app>',
     async sendVerificationRequest({ identifier, url, provider }) {
       // Sans clé Resend (développement, CI), le lien part dans la console :
       // le parcours reste testable de bout en bout.
@@ -37,7 +37,7 @@ const providers: NextAuthConfig['providers'] = [
         body: JSON.stringify({
           from: provider.from,
           to: identifier,
-          subject: 'Ton lien pour continuer sur Buildr',
+          subject: 'Ton lien pour continuer sur Nexteo',
           html: await renderMagicLinkEmail(url),
         }),
       });

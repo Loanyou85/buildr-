@@ -20,11 +20,11 @@ export default async function SignInPage({
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-16">
       <Link href="/" className="font-display text-base font-bold tracking-[-0.02em] text-encre">
-        BUILDR
+        NEXTEO
       </Link>
 
       <h1 className="mt-10 text-2xl">Commencer ton aventure</h1>
-      <p className="prose-buildr mt-3 text-base text-beton-600">
+      <p className="prose-nexteo mt-3 text-base text-beton-600">
         Un lien de connexion t’est envoyé par e-mail. Pas de mot de passe à retenir.
       </p>
 
@@ -65,8 +65,8 @@ export default async function SignInPage({
       ) : null}
 
       {/* Garde-fou n° 4 : consentement explicite, données sensibles annoncées. */}
-      <p className="prose-buildr mt-8 text-xs text-beton-600">
-        En continuant, tu acceptes que Buildr traite les informations que tu donnes pendant le diagnostic
+      <p className="prose-nexteo mt-8 text-xs text-beton-600">
+        En continuant, tu acceptes que Nexteo traite les informations que tu donnes pendant le diagnostic
         — situation, niveau d’études, budget, préférences de travail — pour construire ta recommandation
         et ton parcours. Ces données sont hébergées dans l’Union européenne, conservées 36 mois, et tu
         peux les exporter ou tout supprimer à tout moment depuis ton compte. Le service n’est pas

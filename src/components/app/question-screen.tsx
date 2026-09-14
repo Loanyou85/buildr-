@@ -67,13 +67,13 @@ export function QuestionScreen({
         className="flex flex-1 flex-col justify-center py-12"
       >
         {isFirst ? (
-          <p className="prose-buildr mb-6 text-base text-beton-600">
+          <p className="prose-nexteo mb-6 text-base text-beton-600">
             On commence par toi. Plus on comprend qui tu es, plus ton parcours sera personnalisé.
           </p>
         ) : null}
 
         <h1 className="text-2xl">{question.title}</h1>
-        {question.help ? <p className="prose-buildr mt-3 text-base text-beton-600">{question.help}</p> : null}
+        {question.help ? <p className="prose-nexteo mt-3 text-base text-beton-600">{question.help}</p> : null}
 
         <form action={saveAnswer} className="mt-8">
           <input type="hidden" name="key" value={question.key} />

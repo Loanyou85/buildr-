@@ -56,7 +56,7 @@ export default async function RecommendationPage({
     return (
       <div className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center px-5 py-16">
         <h1 className="text-2xl">Aucune activité ne correspond à tes contraintes actuelles.</h1>
-        <p className="prose-buildr mt-4 text-base text-beton-600">
+        <p className="prose-nexteo mt-4 text-base text-beton-600">
           Ce n’est pas un refus : c’est que les contraintes que tu as données (budget, temps disponible,
           ce que tu ne veux pas faire) écartent tout le référentiel. Reprends deux ou trois réponses et
           la proposition changera.

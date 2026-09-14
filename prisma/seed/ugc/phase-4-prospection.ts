@@ -200,11 +200,11 @@ export const phase4: PhaseSeed = {
             '**taux de réponse = réponses ÷ messages envoyés × 100**',
             '',
             '- **10 % ou plus** → ton message fonctionne, continue jusqu’à 50.',
-            '- **moins de 5 %** → ce n’est pas le volume le problème, c’est l’offre ou l’angle. Buildr te le signalera et te proposera d’ajuster l’étape 4 avant de continuer.',
+            '- **moins de 5 %** → ce n’est pas le volume le problème, c’est l’offre ou l’angle. Nexteo te le signalera et te proposera d’ajuster l’étape 4 avant de continuer.',
           ].join('\n'),
           actions: [
             { instruction: 'Après 30 envois, compte les réponses obtenues, y compris les refus : un refus est une réponse.' },
-            { instruction: 'Note le chiffre dans Buildr quand on te le demande : c’est ce qui déclenche la détection d’un problème d’offre.' },
+            { instruction: 'Note le chiffre dans Nexteo quand on te le demande : c’est ce qui déclenche la détection d’un problème d’offre.' },
             { instruction: 'Si ton taux est sous 5 %, ne force pas les 20 messages restants : l’ajustement proposé te fera gagner du temps.' },
           ],
         },

@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   if (!allowed) {
     return Response.json({
       answer:
-        'L’assistance sur chaque étape fait partie de Buildr Pro. En attendant, tout ce qu’il te faut est écrit dans l’étape : les actions sont numérotées et exécutables telles quelles.',
+        'L’assistance sur chaque étape fait partie de Nexteo Pro. En attendant, tout ce qu’il te faut est écrit dans l’étape : les actions sont numérotées et exécutables telles quelles.',
     });
   }
 

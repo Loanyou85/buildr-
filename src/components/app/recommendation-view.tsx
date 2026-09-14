@@ -50,7 +50,7 @@ export function RecommendationView({
       >
         <p className="text-sm text-beton-600">Ton business est prêt.</p>
         <h1 className="mt-2 text-3xl">{primary.name}</h1>
-        <p className="prose-buildr mt-4 text-lg text-encre">{primary.summary}</p>
+        <p className="prose-nexteo mt-4 text-lg text-encre">{primary.summary}</p>
       </motion.div>
 
       {error === 'parcours-indisponible' ? (
@@ -62,7 +62,7 @@ export function RecommendationView({
 
       <section className="mt-10">
         <h2 className="text-lg text-encre">Pourquoi cette activité te correspond</h2>
-        <p className="prose-buildr mt-3 text-base text-beton-600">{primary.rationale}</p>
+        <p className="prose-nexteo mt-3 text-base text-beton-600">{primary.rationale}</p>
 
         <ul className="mt-6 space-y-3">
           {primary.breakdown.map((dimension) => (
@@ -70,7 +70,7 @@ export function RecommendationView({
               <span className="tabular w-12 shrink-0 text-sm text-acier">{dimension.score} %</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium text-encre">{dimension.label}</span>
-                <span className="prose-buildr block text-sm text-beton-600">{dimension.reason}</span>
+                <span className="prose-nexteo block text-sm text-beton-600">{dimension.reason}</span>
               </span>
             </li>
           ))}
@@ -99,7 +99,7 @@ export function RecommendationView({
       {askToRevisit ? (
         <section className="mt-12 rounded-card border border-beton-300 bg-blanc p-6">
           <p className="text-lg text-encre">On reprend deux questions plutôt qu’une troisième proposition.</p>
-          <p className="prose-buildr mt-2 text-sm text-beton-600">
+          <p className="prose-nexteo mt-2 text-sm text-beton-600">
             Tu as écarté {rejectionCount} propositions. Continuer à en générer ne t’avancerait pas : ce qui
             change vraiment le résultat, ce sont tes réponses sur le temps, le budget et ce que tu acceptes
             de faire au quotidien.
@@ -157,7 +157,7 @@ export function RecommendationView({
                 <CardContent className="flex flex-wrap items-start justify-between gap-4 p-5">
                   <div className="min-w-0 flex-1">
                     <p className="text-base text-encre">{alternative.name}</p>
-                    <p className="prose-buildr mt-1 text-sm text-beton-600">{alternative.summary}</p>
+                    <p className="prose-nexteo mt-1 text-sm text-beton-600">{alternative.summary}</p>
                   </div>
                   <form action={acceptRecommendation}>
                     <input type="hidden" name="recommendationId" value={alternative.id} />

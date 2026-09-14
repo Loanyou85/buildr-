@@ -38,13 +38,15 @@ export function InitialiserForm() {
   async function submit(formData: FormData) {
     const secret = String(formData.get('secret') ?? '').trim();
     if (!secret) return;
+    const force = formData.get('force') === 'on';
 
     setState({ kind: 'pending' });
 
     try {
       const response = await fetch('/api/admin/initialiser', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${secret}` },
+        headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force }),
       });
       const data: SeedResponse = await response.json();
 
@@ -99,7 +101,7 @@ export function InitialiserForm() {
           ))}
         </dl>
 
-        <p className="prose-buildr mt-5 text-sm text-encre">
+        <p className="prose-nexteo mt-5 text-sm text-encre">
           Dernière chose, importante : retourne dans les variables d’environnement de ton hébergeur
           et <strong className="font-medium">supprime SEED_SECRET</strong>, puis redéploie. Cette page
           sera alors définitivement fermée.
@@ -126,6 +128,15 @@ export function InitialiserForm() {
           placeholder="••••••••••••••••"
           className="mt-3"
         />
+        <label className="mt-5 flex items-start gap-3">
+          <input type="checkbox" name="force" className="mt-1 size-4 shrink-0 accent-[#3E7BFA]" />
+          <span className="text-sm text-beton-600">
+            Réécrire aussi les parcours <strong className="font-medium text-encre">déjà démarrés</strong>.
+            À cocher uniquement pour mettre à jour le contenu des étapes — la progression en cours sur
+            ces parcours sera perdue.
+          </span>
+        </label>
+
         <Button type="submit" variant="signal" size="lg" className="mt-4" disabled={state.kind === 'pending'}>
           {state.kind === 'pending' ? 'Initialisation en cours…' : 'Initialiser'}
         </Button>
@@ -137,7 +148,7 @@ export function InitialiserForm() {
       </form>
 
       {state.kind === 'error' ? (
-        <p className="prose-buildr mt-4 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
+        <p className="prose-nexteo mt-4 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
           {state.message}
         </p>
       ) : null}

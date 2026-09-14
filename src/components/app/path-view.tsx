@@ -50,7 +50,7 @@ export function PathView({ phases, currentStepId }: { phases: PathPhase[]; curre
             <h2 className="text-lg text-encre">{phase.title}</h2>
             <span className="h-px flex-1 bg-beton-300" aria-hidden />
           </div>
-          <p className="prose-buildr mb-5 text-sm text-beton-600">{phase.goal}</p>
+          <p className="prose-nexteo mb-5 text-sm text-beton-600">{phase.goal}</p>
 
           <ol className="space-y-2">
             {[...phase.steps].reverse().map((step) => {

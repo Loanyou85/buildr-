@@ -27,9 +27,19 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Secret invalide.' }, { status: 401 });
   }
 
+  // `force` réécrit aussi les parcours déjà démarrés : à n'utiliser que pour
+  // corriger le contenu lui-même, car la progression en cours est perdue.
+  let force = false;
+  try {
+    const body: unknown = await request.json();
+    force = typeof body === 'object' && body !== null && (body as { force?: unknown }).force === true;
+  } catch {
+    // Pas de corps de requête : comportement par défaut, sans écrasement.
+  }
+
   const db = new PrismaClient();
   try {
-    const summary = await runSeed(db);
+    const summary = await runSeed(db, { force });
     return Response.json({
       ok: true,
       message: 'Référentiel initialisé. Tu peux maintenant supprimer SEED_SECRET.',
