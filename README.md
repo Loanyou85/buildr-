@@ -25,7 +25,8 @@ et les notifications sont écrits dans la console.
 
 | Variable | Rôle |
 |---|---|
-| `DATABASE_URL` | PostgreSQL (hébergement UE) |
+| `DATABASE_URL` | PostgreSQL (hébergement UE), connexion applicative |
+| `DIRECT_URL` | connexion directe, utilisée **uniquement** par les migrations. En local, même valeur que `DATABASE_URL` ; en production, la connexion non poolée |
 | `AUTH_SECRET`, `AUTH_URL` | Auth.js v5 ; `AUTH_URL` sert aussi d'URL publique |
 | `NEXT_PUBLIC_APP_URL`, `VERCEL_URL` | replis pour l'URL publique (métadonnées, e-mails) |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | connexion Google, optionnelle |
@@ -33,6 +34,30 @@ et les notifications sont écrits dans la console.
 | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | IA, **appels serveur uniquement** |
 | `ADMIN_EMAILS` | e-mails promus `role=admin` à la création du compte |
 | `CRON_SECRET` | protège `POST /api/notifications/run` |
+| `SEED_SECRET` | ouvre `POST /api/admin/initialiser` le temps d'initialiser la base. Non défini = route fermée |
+
+## Déployer
+
+Le script `build` applique les migrations (`prisma migrate deploy`) avant de compiler : une
+base en retard sur le code est une panne silencieuse, autant que le déploiement échoue tout
+de suite. `DATABASE_URL` et `DIRECT_URL` doivent donc être présentes dès le premier build.
+
+Le référentiel (compétences, intérêts, business models, parcours) doit ensuite être injecté
+une fois. Deux moyens, au choix :
+
+```bash
+npm run db:seed                        # depuis une machine avec Node
+```
+
+```bash
+# sans terminal : définir SEED_SECRET, puis appeler la route une fois
+curl -X POST https://<ton-domaine>/api/admin/initialiser \
+  -H "Authorization: Bearer <SEED_SECRET>"
+```
+
+La route est fermée tant que `SEED_SECRET` n'est pas défini, elle est idempotente, et elle ne
+touche jamais à un parcours déjà démarré par un utilisateur. Supprime `SEED_SECRET` une fois
+l'initialisation faite.
 
 ## Tests
 

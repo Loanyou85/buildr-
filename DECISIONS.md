@@ -56,3 +56,15 @@ compte plus que la décision.
   collecter les métadonnées. Le résolveur ignore les valeurs vides ou inanalysables, ajoute le
   protocole quand la plateforme ne donne que l'hôte, et retombe sur `localhost`. Huit tests
   couvrent ces cas, dont celui qui a réellement cassé.
+- **Les migrations tournent au déploiement**, dans le script `build`. Une base en retard sur le
+  code produit des pannes à l'exécution, difficiles à diagnostiquer ; un build qui échoue est
+  immédiat et lisible. `build:sans-migration` reste disponible pour les cas où la base n'est pas
+  joignable depuis l'environnement de build.
+- **`directUrl` dans le schéma Prisma.** En production, l'application passe par un pooler de
+  connexions — indispensable en serverless — mais un pooler ne sait pas exécuter des
+  migrations. Prisma a besoin des deux URL. Conséquence assumée : `DIRECT_URL` devient
+  obligatoire pour migrer, y compris en local, où elle vaut simplement `DATABASE_URL`.
+- **Une route d'initialisation protégée** (`POST /api/admin/initialiser`) rejoue le seed sans
+  terminal, parce qu'une base de production vide rend le produit inutilisable (aucun business
+  model à recommander) et que tout le monde n'a pas Node installé. Fermée par défaut : sans
+  `SEED_SECRET`, elle répond 503.
