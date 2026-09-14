@@ -49,8 +49,11 @@ une fois. Deux moyens, au choix :
 npm run db:seed                        # depuis une machine avec Node
 ```
 
+Sans terminal : définir `SEED_SECRET`, ouvrir `https://<ton-domaine>/initialiser`, coller le
+secret et cliquer. La page appelle `POST /api/admin/initialiser`, qu'on peut aussi appeler
+directement :
+
 ```bash
-# sans terminal : définir SEED_SECRET, puis appeler la route une fois
 curl -X POST https://<ton-domaine>/api/admin/initialiser \
   -H "Authorization: Bearer <SEED_SECRET>"
 ```
