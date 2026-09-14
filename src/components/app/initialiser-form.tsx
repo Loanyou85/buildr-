@@ -56,7 +56,7 @@ export function InitialiserForm() {
               ? 'Le secret ne correspond pas à celui configuré sur le serveur. Vérifie que tu as bien copié la valeur de SEED_SECRET, sans espace avant ou après.'
               : response.status === 503
                 ? 'La variable SEED_SECRET n’est pas définie sur le serveur, la route est donc fermée. Ajoute-la dans les variables d’environnement, redéploie, puis reviens ici.'
-                : (data.error ?? 'L’initialisation a échoué.'),
+                : `${data.error ?? 'L’initialisation a échoué.'} Tu peux relancer sans risque : l’opération est atomique, elle ne laisse jamais la base à moitié remplie.`,
         });
         return;
       }
