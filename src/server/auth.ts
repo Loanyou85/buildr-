@@ -1,4 +1,4 @@
-import NextAuth, { type DefaultSession } from 'next-auth';
+import NextAuth, { type DefaultSession, type NextAuthConfig } from 'next-auth';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import Google from 'next-auth/providers/google';
 import Resend from 'next-auth/providers/resend';
@@ -16,7 +16,7 @@ const adminEmails = (process.env.ADMIN_EMAILS ?? '')
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
 
-const providers = [
+const providers: NextAuthConfig['providers'] = [
   Resend({
     apiKey: process.env.AUTH_RESEND_KEY ?? 'dev-noop',
     from: process.env.EMAIL_FROM ?? 'Buildr <bonjour@buildr.app>',
@@ -52,7 +52,7 @@ if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
       clientId: process.env.AUTH_GOOGLE_ID,
       clientSecret: process.env.AUTH_GOOGLE_SECRET,
       allowDangerousEmailAccountLinking: true,
-    }) as (typeof providers)[number],
+    }),
   );
 }
 
