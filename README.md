@@ -26,7 +26,8 @@ et les notifications sont écrits dans la console.
 | Variable | Rôle |
 |---|---|
 | `DATABASE_URL` | PostgreSQL (hébergement UE) |
-| `AUTH_SECRET`, `AUTH_URL` | Auth.js v5 |
+| `AUTH_SECRET`, `AUTH_URL` | Auth.js v5 ; `AUTH_URL` sert aussi d'URL publique |
+| `NEXT_PUBLIC_APP_URL`, `VERCEL_URL` | replis pour l'URL publique (métadonnées, e-mails) |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | connexion Google, optionnelle |
 | `AUTH_RESEND_KEY`, `EMAIL_FROM` | magic link et notifications par e-mail |
 | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | IA, **appels serveur uniquement** |

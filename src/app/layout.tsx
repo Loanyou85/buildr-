@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Bricolage_Grotesque } from 'next/font/google';
 import { GeistSans } from 'geist/font/sans';
+import { siteUrl } from '@/lib/site';
 import './globals.css';
 
 const bricolage = Bricolage_Grotesque({
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   title: 'Buildr — Ton business. Construis-le.',
   description:
     'Découvre l’activité qui te correspond, puis suis un parcours étape par étape pour la construire.',
-  metadataBase: new URL(process.env.AUTH_URL ?? 'http://localhost:3000'),
+  metadataBase: new URL(siteUrl()),
 };
 
 export const viewport: Viewport = {

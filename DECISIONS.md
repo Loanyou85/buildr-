@@ -47,3 +47,12 @@ compte plus que la décision.
   réels. Les autres business models ont un parcours d'amorçage ; la profondeur se démontre
   sur un cas, pas sur quinze esquisses.
 - **Les variantes budget/niveau sont des lignes `Journey`,** pas des `if` dans le code.
+
+## Déploiement
+
+- **L'URL du site est résolue par `src/lib/site.ts`, jamais lue directement.** Les plateformes
+  de déploiement exposent souvent une variable *définie mais vide* ; `??` ne rattrape que
+  `undefined`, donc `new URL(process.env.AUTH_URL ?? '…')` cassait le build au moment de
+  collecter les métadonnées. Le résolveur ignore les valeurs vides ou inanalysables, ajoute le
+  protocole quand la plateforme ne donne que l'hôte, et retombe sur `localhost`. Huit tests
+  couvrent ces cas, dont celui qui a réellement cassé.

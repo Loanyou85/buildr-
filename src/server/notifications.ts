@@ -2,6 +2,7 @@ import 'server-only';
 import { NotificationType, StepStatus } from '@prisma/client';
 import { db } from '@/server/db';
 import { findForbiddenClaims } from '@/lib/guardrails';
+import { absoluteUrl } from '@/lib/site';
 
 /**
  * Notifications (section 13 du périmètre). Le ton ne fait jamais honte à
@@ -129,7 +130,7 @@ export async function sendDueNotifications(now: Date = new Date()): Promise<{ se
           from: process.env.EMAIL_FROM ?? 'Buildr <bonjour@buildr.app>',
           to: notification.user.email,
           subject: payload.title,
-          text: `${payload.body}\n\n${process.env.AUTH_URL ?? 'http://localhost:3000'}${payload.url}`,
+          text: `${payload.body}\n\n${absoluteUrl(payload.url)}`,
         }),
       });
       if (!response.ok) continue;
