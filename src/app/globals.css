@@ -1,0 +1,196 @@
+@import 'tailwindcss';
+
+/*
+ * Buildr — tokens de design (section 4 du cahier des charges).
+ * Une seule couleur vive existe dans l'application : --signal.
+ * Elle signifie « c'est ça que tu dois faire maintenant » et n'apparaît
+ * qu'une seule fois par écran d'app.
+ */
+
+@theme {
+  /* Bleu de plan — landing et surfaces sombres */
+  --color-plan-900: #0d1e38;
+  --color-plan-700: #1b3a6b;
+
+  /* Bleu d'action — liens, barres de progression, états actifs */
+  --color-acier: #3e7bfa;
+  --color-acier-50: #eaf1fe;
+
+  /* Orange signal — RÉSERVÉ à la prochaine action */
+  --color-signal: #ff7a1a;
+  --color-signal-50: #fff1e6;
+
+  /* Vert de validation — étape cochée ou franchie uniquement */
+  --color-niveau: #17b26a;
+  --color-niveau-50: #e7f8f0;
+
+  /* Graphite */
+  --color-encre: #101828;
+  --color-beton-600: #667085;
+  --color-beton-300: #d0d5dd;
+  --color-beton-100: #f4f6f8;
+  --color-blanc: #ffffff;
+
+  /* Typographie */
+  --font-display: var(--font-bricolage), 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+
+  /* Échelle typographique : 12 / 14 / 16 / 20 / 24 / 32 / 44 / 64 */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2.75rem;
+  --text-4xl: 4rem;
+
+  --text-xs--line-height: 1.5;
+  --text-sm--line-height: 1.5;
+  --text-base--line-height: 1.6;
+  --text-lg--line-height: 1.5;
+  --text-xl--line-height: 1.35;
+  --text-2xl--line-height: 1.2;
+  --text-3xl--line-height: 1.08;
+  --text-4xl--line-height: 1.02;
+
+  /* Easing partagé — section 5 */
+  --ease-buildr: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --radius-card: 1rem;
+}
+
+/*
+ * Rôles sémantiques. Le mode sombre de l'app viendra plus tard :
+ * les tokens sont prêts, l'implémentation ne l'est volontairement pas.
+ */
+:root {
+  --surface-app: var(--color-beton-100);
+  --surface-card: var(--color-blanc);
+  --surface-border: var(--color-beton-300);
+  --text-primary: var(--color-encre);
+  --text-secondary: var(--color-beton-600);
+  color-scheme: light;
+}
+
+@layer base {
+  * {
+    border-color: var(--surface-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--surface-app);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-optical-sizing: auto;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  /* Tout compteur qui change utilise des chiffres tabulaires, sinon ça saute. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Longueur de ligne sous 70 caractères. */
+  .prose-buildr {
+    max-width: 68ch;
+  }
+
+  ::selection {
+    background-color: var(--color-signal-50);
+    color: var(--color-encre);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-acier);
+    outline-offset: 2px;
+  }
+}
+
+/* Section 5.3 : toute animation non essentielle devient un changement d'état instantané. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* --- Utilitaires de la landing (territoire sombre) --- */
+
+.glow-acier {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--color-acier) 12%, transparent),
+    transparent 100%
+  );
+}
+
+.glow-signal {
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--color-signal) 10%, transparent),
+    transparent 100%
+  );
+}
+
+@keyframes marquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.marquee-track {
+  animation: marquee 32s linear infinite;
+  will-change: transform;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes column-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+.column-scroll {
+  animation: column-scroll var(--column-duration, 40s) linear infinite;
+  will-change: transform;
+}
+
+.column-wall:hover .column-scroll {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .column-scroll {
+    animation: none !important;
+  }
+}

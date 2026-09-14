@@ -1,0 +1,683 @@
+// Buildr — schéma de données (section 6 du cahier des charges).
+// Règle structurante : les parcours ne sont jamais codés en dur dans le
+// front-end. Ajouter un business model ou un parcours est une insertion en
+// base, jamais une modification de code.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// 6.1 — Compte et profil
+// ---------------------------------------------------------------------------
+
+enum Role {
+  user
+  admin
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  role          Role      @default(user)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // RGPD : consentement explicite recueilli à l'inscription (garde-fou n° 4).
+  consentAcceptedAt   DateTime?
+  consentVersion      String?
+  dataRetentionMonths Int       @default(36)
+
+  accounts         Account[]
+  sessions         Session[]
+  profile          Profile?
+  recommendations  Recommendation[]
+  userJourneys     UserJourney[]
+  milestones       UserMilestone[]
+  adventures       Adventure[]
+  notifications    Notification[]
+  notificationPref NotificationPref?
+  assistantThreads AssistantThread[]
+  subscription     Subscription?
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @id
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+enum WorkMode {
+  remote
+  local
+  hybrid
+}
+
+enum RiskTolerance {
+  low
+  medium
+  high
+}
+
+enum ProfileStatus {
+  student
+  employed
+  unemployed
+  freelance
+  entrepreneur
+  other
+}
+
+enum EducationLevel {
+  none
+  highschool
+  bac2
+  bac3
+  bac5
+  phd
+}
+
+model Profile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Situation
+  age            Int?
+  country        String?
+  city           String?
+  status         ProfileStatus?
+  educationLevel EducationLevel?
+  educationField String?
+
+  // Goûts déclarés
+  likedSubjects    String[] @default([])
+  dislikedSubjects String[] @default([])
+
+  // Contraintes
+  hoursPerWeek  Int?
+  hoursPerDay   Int?
+  initialBudget Int?
+  monthlyBudget Int?
+
+  // Objectif
+  financialGoal Int?
+  timeHorizon   Int? // en mois
+  riskTolerance RiskTolerance?
+
+  // Préférences de travail
+  workMode        WorkMode?
+  showsFace       Boolean?
+  createsContent  Boolean?
+  prefersSolo     Boolean?
+  likesStrangers  Boolean?
+  likesSelling    Boolean?
+  likesCreating   Boolean?
+  likesAnalyzing  Boolean?
+  likesRepetition Boolean?
+  prefersFreedom  Boolean?
+
+  // Reprise de l'onboarding : clé de la dernière question répondue.
+  onboardingStep      String?
+  onboardingCompleted Boolean @default(false)
+
+  // Signaux extraits des réponses libres par l'IA (section 7).
+  derivedSignals Json?
+
+  skills    UserSkill[]
+  interests UserInterest[]
+  habits    HabitAnswer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Skill {
+  id       String      @id @default(cuid())
+  slug     String      @unique
+  label    String
+  category String
+  users    UserSkill[]
+}
+
+model UserSkill {
+  profileId String
+  skillId   String
+  level     Int     @default(0) // 0-5
+  profile   Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  skill     Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, skillId])
+}
+
+model Interest {
+  id    String         @id @default(cuid())
+  slug  String         @unique
+  label String
+  users UserInterest[]
+}
+
+model UserInterest {
+  profileId  String
+  interestId String
+  profile    Profile  @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  interest   Interest @relation(fields: [interestId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, interestId])
+}
+
+model HabitAnswer {
+  id          String  @id @default(cuid())
+  profileId   String
+  questionKey String
+  answer      String  @db.Text
+  profile     Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, questionKey])
+}
+
+// ---------------------------------------------------------------------------
+// 6.2 — Business models
+// ---------------------------------------------------------------------------
+
+enum Difficulty {
+  easy
+  medium
+  hard
+}
+
+model BusinessModel {
+  id                    String     @id @default(cuid())
+  slug                  String     @unique
+  name                  String
+  summary               String     @db.Text
+  economicModel         String
+  difficulty            Difficulty
+  minBudget             Int
+  maxBudget             Int
+  hoursPerWeekMin       Int
+  hoursPerWeekMax       Int
+  timeToFirstClientDays Int
+
+  // Poids de scoring par dimension. En base, jamais dans le code : passer de
+  // 1 à 50 business models ne doit demander aucune refonte.
+  scoringWeights Json
+  isActive       Boolean @default(true)
+
+  // Contraintes dures évaluées avant le scoring (section 7).
+  requiresFace          Boolean @default(false)
+  requiresContent       Boolean @default(false)
+  requiresSelling       Boolean @default(false)
+  requiresLocalPresence Boolean @default(false)
+
+  tags            BusinessTag[]
+  journeys        Journey[]
+  recommendations Recommendation[]
+}
+
+model BusinessTag {
+  id              String        @id @default(cuid())
+  businessModelId String
+  dimension       String // skills | interests | behavior | personality | market...
+  key             String
+  weight          Float         @default(1)
+  businessModel   BusinessModel @relation(fields: [businessModelId], references: [id], onDelete: Cascade)
+
+  @@unique([businessModelId, dimension, key])
+  @@index([dimension, key])
+}
+
+// ---------------------------------------------------------------------------
+// 6.3 — Recommandation
+// ---------------------------------------------------------------------------
+
+enum RecommendationStatus {
+  proposed
+  accepted
+  rejected
+}
+
+model Recommendation {
+  id              String               @id @default(cuid())
+  userId          String
+  businessModelId String
+  score           Float
+  rank            Int                  @default(1)
+  breakdown       Json // détail par dimension : explication + débogage
+  rationale       String?              @db.Text
+  status          RecommendationStatus @default(proposed)
+  rejectionReason String?              @db.Text
+  createdAt       DateTime             @default(now())
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessModel BusinessModel @relation(fields: [businessModelId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// 6.4 — Parcours : Business → Parcours → Phase → Étape → Sous-étape → Action
+// ---------------------------------------------------------------------------
+
+enum BudgetTier {
+  zero // 0 € — chemin organique
+  low // ~300 € — outils payants
+  high // ~2000 € — acquisition payante
+}
+
+enum ExperienceTier {
+  beginner
+  intermediate
+  advanced
+}
+
+model Journey {
+  id              String         @id @default(cuid())
+  businessModelId String
+  name            String
+  budgetTier      BudgetTier
+  experienceTier  ExperienceTier
+  version         Int            @default(1)
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  businessModel BusinessModel @relation(fields: [businessModelId], references: [id], onDelete: Cascade)
+  phases        Phase[]
+  userJourneys  UserJourney[]
+
+  @@unique([businessModelId, budgetTier, experienceTier, version])
+}
+
+model Phase {
+  id        String @id @default(cuid())
+  journeyId String
+  order     Int
+  title     String
+  goal      String @db.Text
+
+  journey Journey @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  steps   Step[]
+
+  @@unique([journeyId, order])
+}
+
+model Step {
+  id               String     @id @default(cuid())
+  phaseId          String
+  order            Int
+  number           Int // numéro global dans le parcours, affiché à l'utilisateur
+  title            String
+  goal             String     @db.Text
+  why              String     @db.Text
+  estimatedMinutes Int
+  difficulty       Difficulty @default(easy)
+
+  // { requiresSteps: string[], requiresCheckpoints: string[] }
+  unlockConditions Json?
+
+  phase       Phase             @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  subSteps    SubStep[]
+  checkpoints Checkpoint[]
+  resources   Resource[]
+  progress    StepProgress[]
+  adjustments Adjustment[]
+  threads     AssistantThread[]
+
+  @@unique([phaseId, order])
+}
+
+model SubStep {
+  id     String @id @default(cuid())
+  stepId String
+  order  Int
+  title  String
+  body   String @db.Text // markdown
+
+  step    Step     @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  actions Action[]
+
+  @@unique([stepId, order])
+}
+
+model Action {
+  id          String  @id @default(cuid())
+  subStepId   String
+  order       Int
+  instruction String  @db.Text
+  externalUrl String?
+  templateRef String?
+  example     String? @db.Text
+
+  subStep SubStep @relation(fields: [subStepId], references: [id], onDelete: Cascade)
+
+  @@unique([subStepId, order])
+}
+
+model Checkpoint {
+  id         String  @id @default(cuid())
+  stepId     String
+  order      Int
+  label      String
+  isRequired Boolean @default(true)
+
+  step     Step                 @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  progress CheckpointProgress[]
+
+  @@unique([stepId, order])
+}
+
+enum ResourceType {
+  template
+  script
+  checklist
+  link
+  example
+}
+
+model Resource {
+  id     String       @id @default(cuid())
+  stepId String
+  type   ResourceType
+  title  String
+  url    String?
+  body   String?      @db.Text
+
+  step Step @relation(fields: [stepId], references: [id], onDelete: Cascade)
+}
+
+// ---------------------------------------------------------------------------
+// 6.5 — Progression
+// ---------------------------------------------------------------------------
+
+enum StepStatus {
+  locked
+  available
+  in_progress
+  done
+}
+
+model UserJourney {
+  id              String    @id @default(cuid())
+  userId          String
+  journeyId       String
+  startedAt       DateTime  @default(now())
+  currentStepId   String?
+  // Ne décroît jamais (section 6.5).
+  progressPercent Int       @default(0)
+  completedAt     DateTime?
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  journey Journey @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+
+  steps       StepProgress[]
+  adjustments Adjustment[]
+  dailyPlans  DailyPlan[]
+  threads     AssistantThread[]
+
+  @@unique([userId, journeyId])
+  @@index([userId])
+}
+
+model StepProgress {
+  id            String     @id @default(cuid())
+  userJourneyId String
+  stepId        String
+  status        StepStatus @default(locked)
+  startedAt     DateTime?
+  completedAt   DateTime?
+
+  // Signaux d'exécution utilisés par les règles d'adaptation (section 10).
+  outreachSent    Int?
+  outreachReplies Int?
+  lastActivityAt  DateTime?
+
+  userJourney UserJourney          @relation(fields: [userJourneyId], references: [id], onDelete: Cascade)
+  step        Step                 @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  checkpoints CheckpointProgress[]
+
+  @@unique([userJourneyId, stepId])
+}
+
+model CheckpointProgress {
+  id             String   @id @default(cuid())
+  stepProgressId String
+  checkpointId   String
+  checkedAt      DateTime @default(now())
+
+  stepProgress StepProgress @relation(fields: [stepProgressId], references: [id], onDelete: Cascade)
+  checkpoint   Checkpoint   @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
+
+  @@unique([stepProgressId, checkpointId])
+}
+
+enum AdjustmentReason {
+  low_reply_rate
+  stalled_step
+  partial_checklist
+}
+
+model Adjustment {
+  id            String           @id @default(cuid())
+  userJourneyId String
+  stepId        String
+  reason        AdjustmentReason
+  suggestion    String           @db.Text
+  createdAt     DateTime         @default(now())
+  acceptedAt    DateTime?
+  dismissedAt   DateTime?
+
+  userJourney UserJourney @relation(fields: [userJourneyId], references: [id], onDelete: Cascade)
+  step        Step        @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([userJourneyId, stepId, reason])
+}
+
+model DailyPlan {
+  id               String   @id @default(cuid())
+  userJourneyId    String
+  date             DateTime @db.Date
+  tasks            Json
+  estimatedMinutes Int
+
+  userJourney UserJourney @relation(fields: [userJourneyId], references: [id], onDelete: Cascade)
+
+  @@unique([userJourneyId, date])
+}
+
+// ---------------------------------------------------------------------------
+// 6.6 — Jalons et aventures
+// ---------------------------------------------------------------------------
+
+model Milestone {
+  id    String @id @default(cuid())
+  key   String @unique
+  label String
+  order Int    @default(0)
+
+  users  UserMilestone[]
+  shares AdventureShare[]
+}
+
+// Garde-fou n° 3 : `declared` par défaut, `verified` uniquement si une source
+// de paiement est connectée. Aucune autre valeur n'existe.
+enum VerificationStatus {
+  declared
+  verified
+}
+
+model UserMilestone {
+  id                 String             @id @default(cuid())
+  userId             String
+  milestoneId        String
+  reachedAt          DateTime           @default(now())
+  declaredValue      Int?
+  verificationStatus VerificationStatus @default(declared)
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestone Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, milestoneId])
+}
+
+model Adventure {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  slug      String   @unique
+  isPublic  Boolean  @default(false)
+  story     String?  @db.Text
+  startedAt DateTime @default(now())
+  // Garde-fou n° 1 : toute donnée de démonstration est marquée et affichée
+  // comme exemple.
+  isDemo    Boolean  @default(false)
+
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shares AdventureShare[]
+}
+
+model AdventureShare {
+  id           String   @id @default(cuid())
+  adventureId  String
+  milestoneId  String
+  cardImageUrl String?
+  sharedAt     DateTime @default(now())
+
+  adventure Adventure @relation(fields: [adventureId], references: [id], onDelete: Cascade)
+  milestone Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+
+  @@unique([adventureId, milestoneId])
+}
+
+// ---------------------------------------------------------------------------
+// 6.7 — Notifications, assistant, abonnement, feature flags
+// ---------------------------------------------------------------------------
+
+enum NotificationType {
+  daily_reminder
+  inactivity
+  milestone
+  adjustment
+}
+
+enum NotificationChannel {
+  email
+  browser
+  both
+}
+
+model Notification {
+  id           String           @id @default(cuid())
+  userId       String
+  type         NotificationType
+  payload      Json
+  scheduledFor DateTime
+  sentAt       DateTime?
+  readAt       DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scheduledFor])
+}
+
+model NotificationPref {
+  userId             String              @id
+  dailyReminder      Boolean             @default(true)
+  reminderHour       Int                 @default(9)
+  inactivityReminder Boolean             @default(true)
+  channel            NotificationChannel @default(email)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AssistantThread {
+  id            String   @id @default(cuid())
+  userId        String
+  userJourneyId String?
+  stepId        String?
+  createdAt     DateTime @default(now())
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userJourney UserJourney?       @relation(fields: [userJourneyId], references: [id], onDelete: Cascade)
+  step        Step?              @relation(fields: [stepId], references: [id], onDelete: SetNull)
+  messages    AssistantMessage[]
+
+  @@unique([userId, stepId])
+}
+
+enum MessageRole {
+  user
+  assistant
+}
+
+model AssistantMessage {
+  id              String      @id @default(cuid())
+  threadId        String
+  role            MessageRole
+  content         String      @db.Text
+  contextSnapshot Json?
+  createdAt       DateTime    @default(now())
+
+  thread AssistantThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+}
+
+enum Plan {
+  free
+  pro
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  canceled
+}
+
+model Subscription {
+  userId           String             @id
+  plan             Plan               @default(free)
+  status           SubscriptionStatus @default(active)
+  currentPeriodEnd DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model FeatureFlag {
+  key   String @id
+  label String
+  plans Plan[]
+}
