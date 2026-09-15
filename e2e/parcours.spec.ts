@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { cleanupUser, completeProfile, createAccount, db, signIn, TEST_PASSWORD } from './fixtures';
+import { indexOfQuestion } from '../src/lib/onboarding/questions';
 
 const EMAIL = 'e2e-parcours@nexteo.test';
 
@@ -220,6 +221,67 @@ test.describe('Le chemin, de bout en bout', () => {
 
     // On quitte la page avant de supprimer l'utilisateur : sinon une
     // revalidation encore en vol interroge des lignes qui viennent de partir.
+    await page.goto('about:blank');
+    await cleanupUser(email);
+  });
+
+  test('les cases se cochent visiblement, même avant le chargement du script', async ({ browser }) => {
+    const email = 'e2e-coche@nexteo.test';
+    const user = await createAccount({ email });
+    await db.profile.create({ data: { userId: user.id, age: 29 } });
+
+    // JavaScript coupé : c'est l'état d'une page dont le script n'a pas encore
+    // chargé. Le tunnel doit rester entièrement utilisable.
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto('/connexion');
+    await page.getByLabel('Ton adresse e-mail').fill(email);
+    await page.getByLabel('Ton mot de passe').fill(TEST_PASSWORD);
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+    await page.waitForURL(/\/(app|onboarding)/);
+
+    const skillsIndex = indexOfQuestion('skills');
+    await page.goto(`/onboarding?q=${skillsIndex}`);
+
+    const card = page.locator('form label:has(input[type="checkbox"])').first();
+    await card.click();
+
+    // La coche est dessinée en CSS : elle apparaît sans attendre React.
+    const mark = card.locator('span').first();
+    await expect(mark).toHaveCSS('background-color', 'rgb(62, 123, 250)');
+
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await page.waitForURL(`**/onboarding?q=${skillsIndex + 1}`);
+
+    const saved = await db.userSkill.count({ where: { profile: { userId: user.id } } });
+    expect(saved).toBe(1);
+
+    await context.close();
+    await cleanupUser(email);
+  });
+
+  test('l’objectif de revenu se règle avec une barre, de 0 à 50 000 €', async ({ page }) => {
+    const email = 'e2e-curseur@nexteo.test';
+    const user = await createAccount({ email });
+    await db.profile.create({ data: { userId: user.id, age: 29 } });
+    await signIn(page, email);
+
+    const goalIndex = indexOfQuestion('financialGoal');
+    await page.goto(`/onboarding?q=${goalIndex}`);
+    const slider = page.locator('input[type="range"]');
+    await expect(slider).toHaveAttribute('min', '0');
+    await expect(slider).toHaveAttribute('max', '50000');
+
+    await slider.fill('7500');
+    await expect(page.getByText('7 500', { exact: false })).toBeVisible();
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    // Attendre la question suivante, pas « une URL contenant q » : la page
+    // courante satisfait déjà cette condition, et la base serait lue trop tôt.
+    await page.waitForURL(`**/onboarding?q=${goalIndex + 1}`);
+
+    const profile = await db.profile.findUniqueOrThrow({ where: { userId: user.id } });
+    expect(profile.financialGoal).toBe(7500);
+
     await page.goto('about:blank');
     await cleanupUser(email);
   });

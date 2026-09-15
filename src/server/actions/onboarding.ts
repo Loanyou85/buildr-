@@ -40,6 +40,7 @@ export async function saveAnswer(formData: FormData): Promise<void> {
   const data: Prisma.ProfileUpdateInput = { onboardingStep: key };
 
   switch (question.kind) {
+    case 'slider':
     case 'choice': {
       const raw0 = raw[0];
       if (raw0 === undefined) break;

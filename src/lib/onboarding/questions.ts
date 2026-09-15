@@ -6,7 +6,7 @@
  * Les questions sont des données : l'ordre, les libellés et les tranches
  * changent sans toucher aux écrans.
  */
-export type QuestionKind = 'choice' | 'multi' | 'skills' | 'interests';
+export type QuestionKind = 'choice' | 'multi' | 'skills' | 'interests' | 'slider';
 
 export interface QuestionOption {
   value: string;
@@ -24,6 +24,11 @@ export interface Question {
   options?: QuestionOption[];
   /** La valeur choisie est un nombre à enregistrer tel quel. */
   numeric?: boolean;
+  /** Bornes de la barre à glisser, pour `kind: 'slider'`. */
+  min?: number;
+  max?: number;
+  step?: number;
+  unit?: string;
   optional?: boolean;
   /** Section affichée dans la barre de progression. */
   section: 'toi' | 'temps' | 'moyens' | 'objectif' | 'façon' | 'habitudes';
@@ -189,18 +194,16 @@ export const QUESTIONS: Question[] = [
   },
   {
     key: 'financialGoal',
-    kind: 'choice',
+    kind: 'slider',
     field: 'financialGoal',
     numeric: true,
     section: 'objectif',
     title: 'Quel revenu mensuel vises-tu ?',
-    help: 'Un objectif sert à choisir un rythme, pas à te promettre un résultat.',
-    options: [
-      { value: '500', label: 'Un complément, autour de 500 €' },
-      { value: '1500', label: 'De quoi vivre, autour de 1 500 €' },
-      { value: '3000', label: 'Un vrai salaire, autour de 3 000 €' },
-      { value: '6000', label: 'Plus de 5 000 €' },
-    ],
+    help: 'Fais glisser le curseur. Un objectif sert à choisir un rythme, pas à te promettre un résultat.',
+    min: 0,
+    max: 50_000,
+    step: 500,
+    unit: '€ par mois',
   },
   {
     key: 'timeHorizon',

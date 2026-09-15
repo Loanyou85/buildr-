@@ -82,7 +82,16 @@ export function QuestionScreen({
         <form action={saveAnswer} className="mt-8">
           <input type="hidden" name="key" value={question.key} />
 
-          {isSingle ? (
+          {question.kind === 'slider' ? (
+            <>
+              <SliderChoice question={question} currentValue={currentValue} />
+              <div className="mt-10">
+                <Button type="submit" variant="signal" size="lg">
+                  Continuer
+                </Button>
+              </div>
+            </>
+          ) : isSingle ? (
             <SingleChoice question={question} currentValue={currentValue} />
           ) : (
             <>
@@ -92,7 +101,10 @@ export function QuestionScreen({
                 interests={interests}
                 currentValue={currentValue}
               />
-              <div className="mt-8 flex items-center gap-3">
+              <p className="mt-6 text-sm text-beton-600">
+                Tu peux en cocher plusieurs. Valide quand tu as fini.
+              </p>
+              <div className="mt-3 flex items-center gap-3">
                 <Button type="submit" variant="signal" size="lg">
                   Continuer
                 </Button>
@@ -122,7 +134,65 @@ export function QuestionScreen({
   );
 }
 
-/** Carte cliquable qui répond et enchaîne : c'est un bouton d'envoi. */
+/**
+ * Barre à glisser. Le champ reste non contrôlé : il fonctionne et s'envoie
+ * même si le script n'a pas encore chargé. Seul l'affichage du montant est
+ * rafraîchi par JavaScript.
+ */
+function SliderChoice({
+  question,
+  currentValue,
+}: {
+  question: Question;
+  currentValue: string | string[] | null;
+}) {
+  const min = question.min ?? 0;
+  const max = question.max ?? 100;
+  const step = question.step ?? 1;
+  const initial =
+    typeof currentValue === 'string' && currentValue.length > 0 ? Number(currentValue) : Math.round(max / 25);
+  const start = Number.isFinite(initial) ? Math.min(max, Math.max(min, initial)) : min;
+
+  const [value, setValue] = useState(start);
+  const format = (n: number) => new Intl.NumberFormat('fr-FR').format(n);
+
+  return (
+    <div>
+      <p className="tabular font-display text-4xl font-extrabold tracking-[-0.02em] text-encre">
+        {format(value)}
+        {value >= max ? '+' : ''}{' '}
+        <span className="font-sans text-lg font-medium text-beton-600">{question.unit}</span>
+      </p>
+
+      <input
+        type="range"
+        name="value"
+        min={min}
+        max={max}
+        step={step}
+        defaultValue={start}
+        onInput={(event) => setValue(Number(event.currentTarget.value))}
+        aria-label={question.title}
+        className="mt-6 h-2 w-full cursor-pointer appearance-none rounded-full bg-beton-300 accent-[#3E7BFA] outline-none [&::-moz-range-thumb]:size-6 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-blanc [&::-moz-range-thumb]:bg-acier [&::-webkit-slider-thumb]:size-6 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blanc [&::-webkit-slider-thumb]:bg-acier [&::-webkit-slider-thumb]:shadow-[0_1px_4px_rgba(16,24,40,0.3)]"
+      />
+
+      <div className="tabular mt-3 flex justify-between text-sm text-beton-600">
+        <span>{format(min)} €</span>
+        <span>{format(max)} €+</span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Carte cliquable qui répond et enchaîne : c'est un bouton d'envoi.
+ *
+ * La carte se marque **au clic**, sans attendre le serveur. Entre le clic et
+ * l'affichage de la question suivante il y a un aller-retour ; sans ce retour
+ * visuel immédiat, on croit que le clic n'a pas été pris. Le choix reste un
+ * envoi de formulaire natif : sans JavaScript, la carte fonctionne pareil,
+ * simplement sans l'état intermédiaire.
+ */
 function SingleChoice({
   question,
   currentValue,
@@ -130,19 +200,25 @@ function SingleChoice({
   question: Question;
   currentValue: string | string[] | null;
 }) {
+  const [clicked, setClicked] = useState<string | null>(null);
+
   return (
     <div className="space-y-2.5">
       {question.options?.map((option) => {
-        const selected = currentValue === option.value;
+        const selected = clicked === option.value || (clicked === null && currentValue === option.value);
+        const dimmed = clicked !== null && clicked !== option.value;
+
         return (
           <button
             key={option.value}
             type="submit"
             name="value"
             value={option.value}
+            onClick={() => setClicked(option.value)}
             className={cn(
-              'group flex w-full items-center gap-4 rounded-card border bg-blanc p-4 text-left transition-[border-color,transform] duration-150 hover:border-acier active:scale-[0.995]',
-              selected ? 'border-acier' : 'border-beton-300',
+              'group flex w-full items-center gap-4 rounded-card border p-4 text-left transition-[border-color,background-color,opacity,transform] duration-150 active:scale-[0.995]',
+              selected ? 'border-acier bg-acier-50' : 'border-beton-300 bg-blanc hover:border-acier',
+              dimmed && 'opacity-45',
             )}
           >
             <span
@@ -235,7 +311,14 @@ function MultiChoice({
   );
 }
 
-/** Case à cocher dessinée comme une carte. */
+/**
+ * Case à cocher dessinée comme une carte.
+ *
+ * Volontairement **sans état React** : l'apparence suit la case native, via
+ * CSS. Une case pilotée par JavaScript ne se coche pas tant que le script
+ * n'est pas chargé — et se décoche toute seule à l'hydratation si on a cliqué
+ * avant. Invisible en local, très visible sur une connexion lente.
+ */
 function Checkable({
   value,
   label,
@@ -247,31 +330,20 @@ function Checkable({
   hint?: string;
   defaultChecked: boolean;
 }) {
-  const [checked, setChecked] = useState(defaultChecked);
-
   return (
-    <label
-      className={cn(
-        'flex cursor-pointer items-center gap-3.5 rounded-card border bg-blanc p-4 transition-colors hover:border-acier',
-        checked ? 'border-acier bg-acier-50' : 'border-beton-300',
-      )}
-    >
+    <label className="flex cursor-pointer items-center gap-3.5 rounded-card border border-beton-300 bg-blanc p-4 transition-colors hover:border-acier has-[:checked]:border-acier has-[:checked]:bg-acier-50">
       <input
         type="checkbox"
         name="value"
         value={value}
-        checked={checked}
-        onChange={(event) => setChecked(event.target.checked)}
-        className="sr-only"
+        defaultChecked={defaultChecked}
+        className="peer sr-only"
       />
       <span
-        className={cn(
-          'flex size-5 shrink-0 items-center justify-center rounded-md border text-xs transition-colors',
-          checked ? 'border-acier bg-acier text-white' : 'border-beton-300',
-        )}
+        className="flex size-5 shrink-0 items-center justify-center rounded-md border border-beton-300 text-xs text-transparent transition-colors peer-checked:border-acier peer-checked:bg-acier peer-checked:text-white"
         aria-hidden
       >
-        {checked ? '✓' : ''}
+        ✓
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-base text-encre">{label}</span>

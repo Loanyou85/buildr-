@@ -131,3 +131,19 @@ compte plus que la décision.
   Stripe réessaie : mieux vaut une nouvelle tentative qu'un abonnement payé sans accès.
 - **Aucune interface de facturation réécrite.** Moyens de paiement, factures et résiliation
   passent par le portail Stripe.
+
+## Tunnel : retour visuel
+
+- **Les cases ne dépendent plus de JavaScript.** Elles étaient pilotées par un état React :
+  tant que le script n'avait pas chargé, un clic ne dessinait pas la coche — et s'annulait à
+  l'hydratation s'il avait été fait avant. Invisible en local, très visible sur une connexion
+  lente. L'apparence suit désormais la case native, en CSS. Un test parcourt le tunnel avec
+  JavaScript désactivé.
+- **La carte se marque au clic, avant la réponse du serveur.** Entre le clic et la question
+  suivante il y a un aller-retour ; sans retour visuel immédiat, on croit que rien n'a été
+  pris. Les autres cartes s'estompent, la choisie se remplit.
+- **Les questions à réponses multiples gardent un bouton.** Compétences, intérêts et habitudes
+  perdraient tout leur sens à n'accepter qu'une réponse — le moteur croise plusieurs
+  compétences. L'écran le dit explicitement plutôt que de laisser croire à un blocage.
+- **L'objectif de revenu se règle avec une barre**, de 0 à 50 000 €. Le champ reste non
+  contrôlé : il s'envoie même sans JavaScript, seul l'affichage du montant en dépend.
