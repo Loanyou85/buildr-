@@ -31,6 +31,17 @@ npm run dev
 | `AUTH_RESEND_KEY`, `EMAIL_FROM` | non | Envoi des e-mails |
 | `ADMIN_EMAILS` | non | Adresses promues administrateur à l'inscription |
 
+## Déploiement
+
+`npm run build` applique les migrations **et** sème le contenu avant de
+construire le site. Le seed est idempotent : s'il y a déjà un parcours en base,
+il ne fait rien et le dit. Un déploiement ne demande donc aucune manipulation
+manuelle, et un premier déploiement sur une base vide part avec tout son
+contenu.
+
+Pour réécrire le contenu après avoir modifié le parcours ou les gabarits de
+prompts : `npm run db:seed -- --force`.
+
 ## Commandes
 
 ```bash

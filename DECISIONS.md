@@ -98,6 +98,13 @@ Sans les lots, plusieurs centaines de lignes dépassent le délai d'exécution.
 changer l'énumération.** Sans ça, le transtypage échoue sur une base déjà semée
 avec les anciennes offres, et le déploiement s'arrête au milieu.
 
+**Le seed tourne pendant le build.** Le contenu — trente archétypes, treize
+phases, quarante gabarits de prompts, vingt-sept motifs d'erreur — n'est pas
+optionnel : sans lui le produit n'a rien à montrer. Le faire passer par une
+page d'administration à déclencher à la main, c'est accepter qu'un déploiement
+mette le site en ligne vide. Le garde d'idempotence rend les builds suivants
+gratuits.
+
 **Le webhook Stripe reste le seul endroit qui ouvre un accès payant.** Une
 redirection de retour peut être fabriquée, une signature Stripe non.
 
