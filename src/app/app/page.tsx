@@ -18,7 +18,12 @@ export const dynamic = 'force-dynamic';
  * Extrêmement simple : l'objectif, trois tâches, le temps, un bouton.
  * C'est le seul endroit de l'écran où l'orange signal apparaît.
  */
-export default async function TodayPage() {
+export default async function TodayPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ abonnement?: string }>;
+}) {
+  const { abonnement } = await searchParams;
   const session = await auth();
   if (!session?.user?.id) redirect('/connexion');
 
@@ -48,6 +53,12 @@ export default async function TodayPage() {
 
   return (
     <AppShell active="/app" aside={<AssistantLauncher stepId={today.step.id} />}>
+      {abonnement === 'actif' ? (
+        <p className="mb-8 rounded-card border border-niveau/40 bg-niveau-50 px-5 py-4 text-sm text-encre">
+          Ton abonnement est actif. Tout le parcours est ouvert — la suite est juste en dessous.
+        </p>
+      ) : null}
+
       <div className="flex items-baseline justify-between gap-4">
         <p className="tabular font-display text-sm font-bold tracking-[0.08em] text-beton-600">
           JOUR {today.day}

@@ -6,20 +6,21 @@ import { Plan } from '@prisma/client';
 import { db } from '@/server/db';
 import { requireUser } from '@/server/auth';
 import { OFFERS } from '@/lib/offers';
+import { getStripe, priceIdFor, stripeEnabled } from '@/server/stripe';
+import { absoluteUrl } from '@/lib/site';
 
-/** Un prestataire de paiement est-il configuré ? */
 export async function paymentsEnabled(): Promise<boolean> {
-  return Boolean(process.env.STRIPE_SECRET_KEY);
+  return stripeEnabled();
 }
 
 /**
  * Choix d'une offre.
  *
- * L'offre gratuite s'active immédiatement. Une offre payante enregistre
- * l'intention et s'arrête là tant qu'aucun prestataire de paiement n'est
- * branché : on ne fait jamais croire à un paiement qui n'a pas eu lieu.
- * Quand Stripe sera configuré, c'est ici que part la session de paiement — et
- * c'est le retour du webhook qui fera passer `plan` à la valeur choisie.
+ * L'offre gratuite s'active immédiatement. Une offre payante ouvre un tunnel
+ * de paiement Stripe ; c'est le webhook, et lui seul, qui accorde ensuite
+ * l'accès. Tant qu'aucune clé n'est configurée, l'intention est enregistrée et
+ * annoncée comme telle : on ne fait jamais croire à un paiement qui n'a pas eu
+ * lieu.
  */
 export async function choosePlan(formData: FormData): Promise<void> {
   const user = await requireUser();
@@ -37,17 +38,71 @@ export async function choosePlan(formData: FormData): Promise<void> {
     redirect('/app');
   }
 
-  await db.subscription.upsert({
+  const subscription = await db.subscription.upsert({
     where: { userId: user.id },
     update: { intendedPlan: offer.plan, intendedAt: new Date() },
     create: { userId: user.id, plan: Plan.free, intendedPlan: offer.plan, intendedAt: new Date() },
   });
 
-  if (!(await paymentsEnabled())) {
+  const stripe = getStripe();
+  const priceId = priceIdFor(offer.plan);
+
+  if (!stripe || !priceId) {
     redirect(`/offres?paiement=indisponible&offre=${offer.plan}`);
   }
 
-  // Point de branchement du prestataire de paiement : créer la session ici et
-  // rediriger vers son tunnel. Rien d'autre ne bouge dans l'application.
-  redirect(`/offres?paiement=indisponible&offre=${offer.plan}`);
+  // Un client Stripe par utilisateur, réutilisé : l'historique de facturation
+  // reste d'un seul tenant même après un changement d'offre.
+  let customerId = subscription.stripeCustomerId;
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      email: user.email ?? undefined,
+      name: user.name ?? undefined,
+      metadata: { userId: user.id },
+    });
+    customerId = customer.id;
+    await db.subscription.update({
+      where: { userId: user.id },
+      data: { stripeCustomerId: customerId },
+    });
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    customer: customerId,
+    line_items: [{ price: priceId, quantity: 1 }],
+    locale: 'fr',
+    allow_promotion_codes: true,
+    // L'identifiant voyage avec la session : le webhook saura à qui accorder
+    // l'accès sans dépendre de l'e-mail, qui peut changer.
+    client_reference_id: user.id,
+    subscription_data: { metadata: { userId: user.id, plan: offer.plan } },
+    metadata: { userId: user.id, plan: offer.plan },
+    success_url: absoluteUrl('/app?abonnement=actif'),
+    cancel_url: absoluteUrl('/offres?paiement=annule'),
+  });
+
+  if (!session.url) redirect(`/offres?paiement=indisponible&offre=${offer.plan}`);
+  redirect(session.url);
+}
+
+/**
+ * Portail de facturation Stripe : changer de moyen de paiement, télécharger
+ * ses factures, résilier. Rien de tout cela n'a à être réimplémenté ici.
+ */
+export async function openBillingPortal(): Promise<void> {
+  const user = await requireUser();
+  const stripe = getStripe();
+  const subscription = await db.subscription.findUnique({ where: { userId: user.id } });
+
+  if (!stripe || !subscription?.stripeCustomerId) {
+    redirect('/offres');
+  }
+
+  const session = await stripe.billingPortal.sessions.create({
+    customer: subscription.stripeCustomerId,
+    return_url: absoluteUrl('/app/compte'),
+  });
+
+  redirect(session.url);
 }

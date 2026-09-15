@@ -125,8 +125,9 @@ export async function acceptRecommendation(formData: FormData): Promise<void> {
   }
 
   revalidatePath('/app');
-  // Le parcours existe, l'utilisateur voit maintenant jusqu'où il veut aller.
-  redirect('/offres');
+  // Le parcours existe : on montre d'abord ce qui vient d'être calculé, puis
+  // les offres.
+  redirect('/analyse');
 }
 
 export async function rejectRecommendation(formData: FormData): Promise<void> {

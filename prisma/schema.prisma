@@ -676,13 +676,18 @@ enum SubscriptionStatus {
 }
 
 model Subscription {
-  userId           String             @id
-  plan             Plan               @default(free)
-  status           SubscriptionStatus @default(active)
-  currentPeriodEnd DateTime?
+  userId               String             @id
+  plan                 Plan               @default(free)
+  status               SubscriptionStatus @default(active)
+  currentPeriodEnd     DateTime?
   /// Offre choisie sur l'écran des offres, en attente d'un paiement effectif.
-  intendedPlan     Plan?
-  intendedAt       DateTime?
+  intendedPlan         Plan?
+  intendedAt           DateTime?
+  /// Références Stripe. Le client est créé au premier paiement et réutilisé
+  /// ensuite, pour que l'historique de facturation reste d'un seul tenant.
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  cancelAtPeriodEnd    Boolean            @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

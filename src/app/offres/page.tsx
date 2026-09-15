@@ -54,6 +54,13 @@ export default async function OffersPage({
           </p>
         ) : null}
 
+        {paiement === 'annule' ? (
+          <p className="mt-6 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
+            Paiement interrompu, rien n’a été débité. Tu peux reprendre quand tu veux, ou commencer
+            avec l’offre Découverte.
+          </p>
+        ) : null}
+
         {paiement === 'indisponible' && pending ? (
           <p className="prose-nexteo mt-6 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
             Ton choix de l’offre {pending.name} est enregistré, mais le paiement n’est pas encore

@@ -7,6 +7,7 @@ import { Input, Textarea } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { deleteMyAccount, updateNotificationPrefs } from '@/server/actions/account';
 import { toggleAdventureVisibility } from '@/server/actions/journey';
+import { openBillingPortal } from '@/server/actions/plan';
 import { ageGate } from '@/lib/guardrails';
 import { formatDateFr } from '@/lib/utils';
 import { offerFor } from '@/lib/offers';
@@ -170,6 +171,20 @@ export default async function AccountPage({
             Se déconnecter
           </Button>
         </form>
+        {subscription?.stripeCustomerId ? (
+          <form action={openBillingPortal} className="mt-4">
+            <Button type="submit" variant="outline" size="sm">
+              Gérer mon abonnement
+            </Button>
+            <p className="mt-2 text-xs text-beton-600">
+              Factures, moyen de paiement et résiliation, sur la page sécurisée de notre prestataire.
+              {subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd
+                ? ` Ton abonnement prend fin le ${formatDateFr(subscription.currentPeriodEnd)}.`
+                : ''}
+            </p>
+          </form>
+        ) : null}
+
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Badge variant="outline">Offre {offerFor(subscription?.plan ?? 'free').name}</Badge>
           {session.user.role === 'admin' ? <Badge variant="acier">Administrateur</Badge> : null}

@@ -93,7 +93,19 @@ test.describe('Le chemin, de bout en bout', () => {
 
     await page.getByRole('button', { name: 'Commencer' }).click();
 
-    // --- Les offres, juste après la recommandation ---
+    // --- L'écran d'analyse, avec des chiffres tous vérifiables ---
+    await page.waitForURL('**/analyse**');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Agence UGC');
+    await expect(page.getByText('activités comparées')).toBeVisible();
+    // Garde-fou n° 1 : aucun chiffre d'usage inventé tant qu'il n'est pas réel.
+    const analyse = await page.locator('body').innerText();
+    expect(analyse).not.toMatch(/\b1\s?200\b/);
+    expect(analyse).toMatch(/22 étapes/);
+    expect(analyse).toMatch(/166 actions/);
+
+    await page.getByRole('link', { name: 'Voir mon parcours' }).click();
+
+    // --- Les offres ---
     await page.waitForURL('**/offres**');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Jusqu’où veux-tu aller');
     await expect(page.getByRole('heading', { level: 2 })).toHaveCount(3);
@@ -160,7 +172,8 @@ test.describe('Le chemin, de bout en bout', () => {
 
     await page.goto('/recommandation');
     await page.getByRole('button', { name: 'Commencer' }).click();
-    await page.waitForURL('**/offres**');
+    await page.waitForURL('**/analyse**');
+    await page.goto('/offres');
 
     await page.getByRole('button', { name: 'Choisir Parcours' }).click();
     await page.waitForURL(/paiement=indisponible/);
@@ -183,7 +196,8 @@ test.describe('Le chemin, de bout en bout', () => {
 
     await page.goto('/recommandation');
     await page.getByRole('button', { name: 'Commencer' }).click();
-    await page.waitForURL('**/offres**');
+    await page.waitForURL('**/analyse**');
+    await page.goto('/offres');
     await page.getByRole('button', { name: 'Commencer gratuitement' }).click();
     await page.waitForURL('**/app');
 

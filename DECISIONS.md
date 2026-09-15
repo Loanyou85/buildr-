@@ -114,3 +114,20 @@ compte plus que la décision.
   enregistre l'intention (`Subscription.intendedPlan`) et le dit franchement : « aucun montant
   ne t'a été débité ». Le point de branchement est isolé dans une seule fonction. Un test
   vérifie que l'accès n'est pas accordé.
+
+## Écran d'analyse et paiement
+
+- **L'écran qui précède les offres affiche des chiffres, tous lus en base au rendu.** La
+  demande initiale était d'annoncer « 1 200 business créés » : c'est faux — aucun utilisateur
+  n'a encore créé d'activité —, c'est contraire au garde-fou n° 1, et placé juste avant un
+  paiement cela constitue une pratique commerciale trompeuse (art. L121-2 du code de la
+  consommation). L'effet recherché est obtenu avec des chiffres vrais : réponses analysées,
+  activités comparées, dimensions pesées, volume réel du parcours.
+- **Le compteur d'usage réel n'apparaît qu'au-delà de 50 parcours démarrés.** En dessous, il
+  ne dit rien d'utile, et l'arrondir à la hausse serait précisément ce qu'on refuse.
+- **Stripe : seul le webhook accorde un accès.** Une redirection de retour se falsifie, une
+  signature Stripe non. Un abonnement résilié ou impayé ramène au plan gratuit — l'accès suit
+  l'état réel du paiement, jamais l'intention. Le webhook renvoie 500 en cas d'erreur pour que
+  Stripe réessaie : mieux vaut une nouvelle tentative qu'un abonnement payé sans accès.
+- **Aucune interface de facturation réécrite.** Moyens de paiement, factures et résiliation
+  passent par le portail Stripe.
