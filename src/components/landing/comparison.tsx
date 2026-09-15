@@ -1,59 +1,42 @@
-'use client';
+import { Reveal } from './reveal';
 
-import { motion, useReducedMotion } from 'motion/react';
-
-/**
- * Tableau comparatif (pattern 7) : Nexteo à gauche, « faire seul » à droite,
- * ligne par ligne, révélé au scroll. Aucune comparaison avec un concurrent
- * nommé, aucune promesse de résultat.
- */
-const ROWS: Array<{ subject: string; nexteo: string; alone: string }> = [
-  { subject: 'Choisir une activité', nexteo: 'Un moteur croise onze dimensions et explique son choix', alone: 'Des heures de vidéos et une intuition' },
-  { subject: 'Savoir quoi faire aujourd’hui', nexteo: 'Une étape, trois actions, un temps estimé', alone: 'Une liste de choses à faire qui s’allonge' },
-  { subject: 'Le niveau de détail', nexteo: 'Chaque action exécutable, avec sa règle et son exemple', alone: '« Il faut créer du contenu »' },
-  { subject: 'Savoir si c’est validé', nexteo: 'Des critères à cocher avant de débloquer la suite', alone: 'Le doute permanent' },
-  { subject: 'Quand ça coince', nexteo: 'Le parcours détecte et propose un ajustement', alone: 'On persévère dans ce qui ne marche pas' },
-  { subject: 'La progression', nexteo: 'Une barre qui ne recule jamais', alone: 'L’impression de tourner en rond' },
+const LIGNES = [
+  { sujet: 'Trouver une idée', seul: 'Tu tournes en rond pendant des semaines', nexteo: 'Trois idées tirées de ce que tu connais déjà' },
+  { sujet: 'Savoir par où commencer', seul: 'Trente onglets ouverts, aucun ordre', nexteo: 'Une seule action à l’écran, toujours la suivante' },
+  { sujet: 'Parler à Claude', seul: 'Tu improvises, il part dans tous les sens', nexteo: 'Les prompts écrits pour toi, dans le bon ordre' },
+  { sujet: 'Quand ça casse', seul: 'Tu cherches, tu abandonnes', nexteo: 'Tu colles l’erreur, tu reçois le prompt qui répare' },
+  { sujet: 'Mettre en ligne', seul: 'Une doc en anglais que tu ne comprends pas', nexteo: 'Onze clics, décrits un par un' },
+  { sujet: 'Encaisser', seul: 'Le paiement passe, l’accès ne s’ouvre pas', nexteo: 'Le branchement Stripe expliqué, test compris' },
+  { sujet: 'Se faire connaître', seul: 'Tu publies trois fois puis tu arrêtes', nexteo: 'Trente scripts écrits pour ton produit' },
 ];
 
+/** Comparatif (section 5.1.7), révélé ligne par ligne au défilement. */
 export function Comparison() {
-  const reduced = useReducedMotion();
-
   return (
-    <section className="bg-plan-900 py-24 text-white">
-      <div className="mx-auto max-w-4xl px-5">
-        <h2 className="font-display text-2xl font-extrabold leading-[1.12] tracking-[-0.02em] sm:text-3xl sm:leading-[1.08]">
-          Avec un parcours, ou seul
-        </h2>
+    <div className="overflow-hidden rounded-[--radius-card] border border-gris-700">
+      <div className="grid grid-cols-[1fr_1fr] gap-px bg-gris-700 text-xs sm:grid-cols-[1fr_1fr_1fr]">
+        <div className="hidden bg-nuit-800 px-4 py-3 text-gris-300 sm:block" />
+        <div className="bg-nuit-800 px-4 py-3 font-medium text-gris-300">Se débrouiller seul</div>
+        <div className="bg-nuit-800 px-4 py-3 font-medium text-white">Avec Nexteo</div>
 
-        <div className="mt-12 overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse text-left">
-            <thead>
-              <tr className="text-sm text-white/50">
-                <th className="w-1/4 pb-4 font-normal" />
-                <th className="w-2/5 pb-4 font-medium text-white">Avec Nexteo</th>
-                <th className="pb-4 font-normal">En construisant seul</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ROWS.map((row, index) => (
-                <motion.tr
-                  key={row.subject}
-                  initial={reduced ? false : { opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-80px' }}
-                  transition={{ duration: reduced ? 0 : 0.35, delay: reduced ? 0 : index * 0.05, ease: [0.22, 1, 0.36, 1] }}
-                  className="border-t border-white/10 align-top"
-                >
-                  <td className="py-4 pr-4 text-sm text-white/50">{row.subject}</td>
-                  <td className="py-4 pr-4 text-sm text-white">{row.nexteo}</td>
-                  <td className="py-4 text-sm text-white/40">{row.alone}</td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        {LIGNES.map((ligne, index) => (
+          <Reveal key={ligne.sujet} delay={index * 40} className="contents">
+            <div className="hidden bg-nuit-900 px-4 py-4 text-gris-300 sm:block">{ligne.sujet}</div>
+            <div className="bg-nuit-900 px-4 py-4 text-gris-300">
+              <span className="mb-1 block text-[11px] uppercase tracking-wide text-gris-300 sm:hidden">
+                {ligne.sujet}
+              </span>
+              {ligne.seul}
+            </div>
+            <div className="bg-nuit-900 px-4 py-4 text-white">
+              <span className="mb-1 block text-[11px] uppercase tracking-wide text-gris-300 sm:hidden">
+                &nbsp;
+              </span>
+              {ligne.nexteo}
+            </div>
+          </Reveal>
+        ))}
       </div>
-    </section>
+    </div>
   );
 }

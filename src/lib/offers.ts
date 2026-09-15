@@ -1,71 +1,94 @@
 import type { Plan } from '@prisma/client';
 
 /**
- * Les trois offres (section 12). Les prix vivent ici, pas dans les écrans, et
- * les droits restent portés par la table `FeatureFlag` : changer une offre ne
- * demande pas de toucher au gating.
+ * Les trois offres du site.
+ *
+ * Les prix vivent ici, les droits vivent dans la table `FeatureFlag` :
+ * changer un prix ne touche pas au gating, et ouvrir un droit ne demande pas
+ * de toucher aux écrans.
+ *
+ * L'offre gratuite n'est pas une quatrième carte. C'est ce que l'utilisateur
+ * a déjà — le diagnostic, ses trois idées, les deux premières phases — et on
+ * le lui rappelle sous les offres plutôt que de lui donner un quatrième choix
+ * au moment de décider.
  */
 export interface Offer {
   plan: Plan;
   name: string;
-  /** Prix mensuel en euros. 0 pour l'offre gratuite. */
+  /** Prix mensuel en euros, centimes compris. */
   price: number;
   tagline: string;
   /** Ce que l'offre ajoute par rapport à la précédente. */
   features: string[];
-  /** Mise en avant : une seule offre peut l'être. */
+  /** Une seule offre peut être mise en avant. */
   highlighted?: boolean;
-  /** Ce que l'offre ne comprend pas, dit franchement. */
-  limit?: string;
 }
 
-export const FREE_STEP_LIMIT = 3;
+/** Nombre de phases ouvertes sans payer (section 13). */
+export const FREE_PHASE_LIMIT = 2;
+
+/** Prompts à la demande inclus chaque mois dans l'offre gratuite. */
+export const FREE_CUSTOM_PROMPTS_PER_MONTH = 3;
 
 export const OFFERS: Offer[] = [
   {
-    plan: 'free',
-    name: 'Découverte',
-    price: 0,
-    tagline: 'Pour voir si le chemin te convient.',
+    plan: 'depart',
+    name: 'Départ',
+    price: 7.99,
+    tagline: 'Pour aller jusqu’à ton site en ligne.',
     features: [
-      'Le diagnostic complet',
-      'Ta recommandation et son explication',
-      'L’aperçu de tout le parcours',
-      `Les ${FREE_STEP_LIMIT} premières étapes, en entier`,
+      'Le parcours complet, les treize phases',
+      'Le pack de prompts entier, dans l’ordre',
+      'Les prompts de réparation quand ça casse',
+      'Le suivi de ton projet d’une étape à l’autre',
     ],
-    limit: `Le parcours s’arrête après l’étape ${FREE_STEP_LIMIT}.`,
   },
   {
-    plan: 'pro',
-    name: 'Parcours',
-    price: 29,
-    tagline: 'Pour construire ton activité jusqu’au premier client.',
+    plan: 'construction',
+    name: 'Construction',
+    price: 18.99,
+    tagline: 'Pour ajouter tout ce que tu veux à ton SaaS.',
     highlighted: true,
     features: [
-      'Le parcours complet, toutes les étapes',
-      'Tous les modèles, scripts et checklists',
-      'L’assistance sur chaque étape',
-      'Les rappels quotidiens et les relances',
-      'Ton historique et tes jalons',
+      'Tout ce que contient Départ',
+      'Le générateur de prompts sans limite',
+      'Des prompts cohérents avec ce que tu as déjà construit',
+      'L’assistance sur l’étape où tu es',
     ],
   },
   {
-    plan: 'illimite',
-    name: 'Illimité',
-    price: 59,
-    tagline: 'Pour mener plusieurs activités de front.',
+    plan: 'lancement',
+    name: 'Lancement',
+    price: 35.99,
+    tagline: 'Pour vendre ce que tu as construit.',
     features: [
-      'Tout ce que contient Parcours',
-      'Plusieurs activités suivies en parallèle',
-      'Toutes les variantes de parcours, selon ton budget et ton niveau',
-      'L’assistance sans limite de questions',
+      'Tout ce que contient Construction',
+      'Les trente scripts vidéo générés pour ton SaaS',
+      'Le calendrier de publication sur un mois',
+      'Tes jalons et ta carte partageable',
     ],
   },
 ];
 
-export function offerFor(plan: Plan): Offer {
-  return OFFERS.find((offer) => offer.plan === plan) ?? OFFERS[0]!;
+/** Ce que garde quelqu'un qui ne paie pas. Affiché sous les offres. */
+export const FREE_FEATURES: string[] = [
+  'Le diagnostic complet',
+  'Tes trois idées et leur justification',
+  `Les ${FREE_PHASE_LIMIT} premières phases du parcours`,
+  'Les quatre prompts de fondation',
+  `${FREE_CUSTOM_PROMPTS_PER_MONTH} prompts à la demande par mois`,
+];
+
+export function offerFor(plan: Plan): Offer | null {
+  return OFFERS.find((offer) => offer.plan === plan) ?? null;
 }
 
-/** Nombre de questions à l'assistance incluses chaque mois dans l'offre Parcours. */
-export const PRO_ASSISTANT_MONTHLY_LIMIT = 50;
+/** Format français avec centimes : 7,99 €. */
+export function formatPrice(value: number): string {
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}

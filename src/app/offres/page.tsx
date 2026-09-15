@@ -1,109 +1,133 @@
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { TopBar } from '@/components/shell/top-bar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { FREE_FEATURES, OFFERS, formatPrice } from '@/lib/offers';
+import { GUARANTEE_DAYS, GUARANTEE_HEADLINE } from '@/lib/guarantee';
 import { auth } from '@/server/auth';
 import { db } from '@/server/db';
-import { OFFERS, offerFor } from '@/lib/offers';
-import { OfferCards } from '@/components/app/offer-cards';
-import { stripeMode } from '@/server/stripe';
-import { GUARANTEE_DAYS, GUARANTEE_PROMISE } from '@/lib/guarantee';
+import { choisirOffre } from '@/server/actions/plan';
+import { stripeEnabled } from '@/server/stripe';
+import { cn } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Les offres, présentées juste après la recommandation : l'utilisateur sait
- * déjà quelle activité lui correspond et ce que contient le parcours. Il paie
- * en sachant ce qu'il achète, ce qui est aussi ce que promet la landing —
- * le diagnostic reste gratuit.
- */
-export default async function OffersPage({
+export const metadata = { title: 'Les offres — Nexteo' };
+
+export default async function OffresPage({
   searchParams,
 }: {
-  searchParams: Promise<{ paiement?: string; offre?: string; raison?: string }>;
+  searchParams: Promise<{ paiement?: string; retour?: string }>;
 }) {
+  const { paiement, retour } = await searchParams;
   const session = await auth();
-  if (!session?.user?.id) redirect('/connexion');
+  if (!session?.user?.id) redirect(`/connexion?suite=${encodeURIComponent('/offres')}`);
 
-  const { paiement, offre, raison } = await searchParams;
-
-  const [subscription, userJourney] = await Promise.all([
-    db.subscription.findUnique({ where: { userId: session.user.id } }),
-    db.userJourney.findFirst({
-      where: { userId: session.user.id },
-      orderBy: { startedAt: 'desc' },
-      include: { journey: { include: { businessModel: true } } },
-    }),
-  ]);
-
-  const mode = stripeMode();
-  const businessName = userJourney?.journey.businessModel.name ?? null;
-  const pending = offre ? offerFor(offre as never) : null;
+  const idee = await db.idea.findFirst({
+    where: { userId: session.user.id, status: 'selected' },
+    select: { title: true },
+  });
 
   return (
-    <div className="min-h-dvh bg-beton-100">
-      <main className="mx-auto max-w-5xl px-5 py-14">
-        {businessName ? (
-          <p className="text-sm text-beton-600">Ton activité : {businessName}</p>
-        ) : null}
-        <h1 className="mt-2 text-3xl">Jusqu’où veux-tu aller ?</h1>
-        <p className="prose-nexteo mt-4 text-lg text-beton-600">
-          Ton parcours est prêt. Tu peux commencer gratuitement et voir par toi-même, ou prendre le
-          chemin complet tout de suite.
+    <>
+      <TopBar />
+      <main className="mx-auto max-w-md px-4 pb-16 pt-6">
+        <h1 className="text-xl font-extrabold text-white">
+          {idee ? `Construis « ${idee.title} ».` : 'Choisis ce dont tu as besoin.'}
+        </h1>
+        <p className="mt-2 text-sm text-gris-300">
+          Tu peux arrêter quand tu veux, depuis ton compte, en deux clics.
         </p>
 
-        {/*
-          Avertissement réservé à l'administrateur : un visiteur n'a rien à
-          faire de cette information, mais toi tu dois la voir avant d'annoncer
-          l'ouverture des paiements.
-        */}
-        {session.user.role === 'admin' && mode !== 'production' ? (
-          <p className="mt-6 rounded-card border border-signal/40 bg-signal-50 p-4 text-sm text-encre">
-            {mode === 'test'
-              ? 'Paiements en mode test : les cartes réelles seront refusées et les cartes de test ouvriront l’accès sans débit. Remplace STRIPE_SECRET_KEY par une clé sk_live_ pour encaisser pour de vrai.'
-              : 'Aucune clé Stripe configurée : choisir une offre payante enregistre l’intention sans rien débiter.'}
+        <Link
+          href="/garantie"
+          className="mt-5 flex items-center justify-between gap-3 rounded-[--radius-card] border border-gris-700 bg-nuit-800 px-4 py-3"
+        >
+          <span>
+            <span className="block text-sm font-medium text-white">{GUARANTEE_HEADLINE}</span>
+            <span className="mt-0.5 block text-xs text-gris-300">
+              Lire les conditions des {GUARANTEE_DAYS} jours
+            </span>
+          </span>
+          <span aria-hidden className="text-gris-300">
+            →
+          </span>
+        </Link>
+
+        {paiement === 'indisponible' ? (
+          <p className="mt-5 rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-4 text-sm text-gris-300">
+            Le paiement n’est pas encore branché sur ce site. Ton choix est enregistré,{' '}
+            <strong className="text-white">aucun montant ne t’a été débité</strong> et aucun accès
+            payant n’a été ouvert.
+          </p>
+        ) : null}
+        {retour ? (
+          <p className="mt-5 rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-4 text-sm text-gris-300">
+            Tu as quitté le paiement. Rien n’a été débité.
           </p>
         ) : null}
 
-        {raison === 'plusieurs-parcours' ? (
-          <p className="mt-6 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
-            Suivre une deuxième activité en parallèle fait partie de l’offre Illimité. Ton parcours
-            actuel reste intact quoi qu’il arrive.
+        <div className="mt-6 space-y-4">
+          {OFFERS.map((offre) => (
+            <Card key={offre.plan} actif={offre.highlighted} className="p-5">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-base font-extrabold text-white">{offre.name}</h2>
+                {offre.highlighted ? <Badge ton="neo">Le plus choisi</Badge> : null}
+              </div>
+              <p className="mt-1 text-sm text-gris-300">{offre.tagline}</p>
+
+              <p className="mt-4 font-display text-2xl font-extrabold tabular text-white">
+                {formatPrice(offre.price)}
+                <span className="ml-1 text-sm font-medium text-gris-300">par mois</span>
+              </p>
+
+              <ul className="mt-4 space-y-2">
+                {offre.features.map((feature) => (
+                  <li key={feature} className="flex gap-2.5 text-sm text-gris-300">
+                    <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-neo-500" />
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <form action={choisirOffre} className="mt-5">
+                <input type="hidden" name="plan" value={offre.plan} />
+                <Button
+                  type="submit"
+                  taille="bloc"
+                  variant={offre.highlighted ? 'principal' : 'secondaire'}
+                  className={cn(!offre.highlighted && 'font-medium')}
+                >
+                  Prendre {offre.name}
+                </Button>
+              </form>
+            </Card>
+          ))}
+        </div>
+
+        <section className="mt-8 rounded-[--radius-card] border border-dashed border-gris-700 p-5">
+          <h2 className="text-sm font-bold text-white">Si tu ne prends rien, tu gardes</h2>
+          <ul className="mt-3 space-y-1.5">
+            {FREE_FEATURES.map((item) => (
+              <li key={item} className="flex gap-2.5 text-sm text-gris-300">
+                <span aria-hidden className="mt-2 h-1 w-1 shrink-0 rounded-full bg-gris-700" />
+                {item}
+              </li>
+            ))}
+          </ul>
+          <Button asChild variant="fantome" taille="sm" className="mt-4 w-full">
+            <Link href="/app">Continuer sans payer</Link>
+          </Button>
+        </section>
+
+        {!stripeEnabled() ? (
+          <p className="mt-6 text-center text-xs text-gris-300">
+            Le paiement n’est pas encore actif sur ce site.
           </p>
         ) : null}
-
-        {paiement === 'annule' ? (
-          <p className="mt-6 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
-            Paiement interrompu, rien n’a été débité. Tu peux reprendre quand tu veux, ou commencer
-            avec l’offre Découverte.
-          </p>
-        ) : null}
-
-        {paiement === 'indisponible' && pending ? (
-          <p className="prose-nexteo mt-6 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
-            Ton choix de l’offre {pending.name} est enregistré, mais le paiement n’est pas encore
-            ouvert — aucun montant ne t’a été débité. Tu peux commencer avec l’offre Découverte en
-            attendant : ta progression sera conservée quand tu passeras à l’offre complète.
-          </p>
-        ) : null}
-
-        <OfferCards offers={OFFERS} currentPlan={subscription?.plan ?? 'free'} />
-
-        <p className="prose-nexteo mt-8 rounded-card border border-niveau/40 bg-niveau-50 p-4 text-sm text-encre">
-          <strong className="font-medium">Garantie {GUARANTEE_DAYS} jours.</strong> {GUARANTEE_PROMISE}{' '}
-          <Link href="/garantie" className="text-acier underline-offset-4 hover:underline">
-            Voir les conditions
-          </Link>
-          .
-        </p>
-
-        <p className="prose-nexteo mt-6 text-sm text-beton-600">
-          Sans engagement, résiliable à tout moment. Ta progression et tes données restent les tiennes,
-          exportables et supprimables depuis{' '}
-          <Link href="/app/compte" className="text-acier underline-offset-4 hover:underline">
-            ton compte
-          </Link>
-          .
-        </p>
       </main>
-    </div>
+    </>
   );
 }

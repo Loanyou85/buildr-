@@ -1,197 +1,156 @@
-import { redirect } from 'next/navigation';
-import { auth, signOut } from '@/server/auth';
-import { db } from '@/server/db';
-import { AppShell } from '@/components/app/app-shell';
-import { Button } from '@/components/ui/button';
-import { Input, Textarea } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { deleteMyAccount, updateNotificationPrefs } from '@/server/actions/account';
-import { toggleAdventureVisibility } from '@/server/actions/journey';
-import { openBillingPortal } from '@/server/actions/plan';
-import { ageGate } from '@/lib/guardrails';
-import { formatDateFr } from '@/lib/utils';
-import { offerFor } from '@/lib/offers';
 import Link from 'next/link';
+import { AppShell } from '@/components/app/app-shell';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { db } from '@/server/db';
+import { requireUser } from '@/server/auth';
+import { planFor } from '@/server/features';
+import { deconnecter } from '@/server/actions/auth';
+import { ouvrirPortail } from '@/server/actions/plan';
+import { supprimerCompte } from '@/server/actions/account';
+import { offerFor, formatPrice } from '@/lib/offers';
+import { formatDateFr } from '@/lib/utils';
+import { DECLARED_LABEL } from '@/lib/guardrails';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AccountPage({
+export const metadata = { title: 'Mon compte — Nexteo' };
+
+export default async function ComptePage({
   searchParams,
 }: {
-  searchParams: Promise<{ erreur?: string }>;
+  searchParams: Promise<{ portail?: string }>;
 }) {
-  const session = await auth();
-  if (!session?.user?.id) redirect('/connexion');
+  const { portail } = await searchParams;
+  const user = await requireUser();
 
-  const { erreur } = await searchParams;
-
-  const [user, profile, adventure, prefs, subscription] = await Promise.all([
-    db.user.findUniqueOrThrow({ where: { id: session.user.id } }),
-    db.profile.findUnique({ where: { userId: session.user.id } }),
-    db.adventure.findUnique({ where: { userId: session.user.id } }),
-    db.notificationPref.findUnique({ where: { userId: session.user.id } }),
-    db.subscription.findUnique({ where: { userId: session.user.id } }),
+  const [compte, abonnement, plan, jalons] = await Promise.all([
+    db.user.findUniqueOrThrow({
+      where: { id: user.id },
+      select: { email: true, name: true, createdAt: true, dataRetentionMonths: true },
+    }),
+    db.subscription.findUnique({ where: { userId: user.id } }),
+    planFor(user.id),
+    db.userMilestone.findMany({
+      where: { userId: user.id },
+      include: { milestone: true },
+      orderBy: { milestone: { order: 'asc' } },
+    }),
   ]);
 
-  const gate = ageGate(profile?.age);
+  const offre = offerFor(plan);
 
   return (
-    <AppShell active="/app/compte">
-      <h1 className="text-2xl">Ton compte</h1>
-      <p className="mt-2 text-sm text-beton-600">{user.email}</p>
+    <AppShell actif="/app/compte">
+      <h1 className="text-xl font-extrabold text-white">Mon compte</h1>
+      <p className="mt-2 text-sm text-gris-300">
+        {compte.name} — {compte.email}
+      </p>
 
-      <section className="mt-10">
-        <h2 className="text-lg text-encre">Rappels</h2>
-        <form action={updateNotificationPrefs} className="mt-4 space-y-4 rounded-card border border-beton-300 bg-blanc p-5">
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              name="dailyReminder"
-              defaultChecked={prefs?.dailyReminder ?? true}
-              className="size-4 accent-[#3E7BFA]"
-            />
-            <span className="text-sm text-encre">Me rappeler ce que j’ai à faire chaque jour</span>
-          </label>
-          <label className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              name="inactivityReminder"
-              defaultChecked={prefs?.inactivityReminder ?? true}
-              className="size-4 accent-[#3E7BFA]"
-            />
-            <span className="text-sm text-encre">Me relancer si je décroche plusieurs jours</span>
-          </label>
-          <label className="flex flex-wrap items-center gap-3">
-            <span className="text-sm text-encre">À quelle heure</span>
-            <Input
-              type="number"
-              name="reminderHour"
-              min={0}
-              max={23}
-              defaultValue={prefs?.reminderHour ?? 9}
-              className="tabular w-24"
-            />
-            <span className="text-sm text-beton-600">h</span>
-          </label>
-          <Button type="submit" variant="outline" size="sm">
-            Enregistrer
-          </Button>
-        </form>
-      </section>
-
-      <section className="mt-10">
-        <h2 className="text-lg text-encre">Ton aventure publique</h2>
-        <p className="prose-nexteo mt-2 text-sm text-beton-600">
-          Tu choisis librement ce que tu partages. Rien n’est publié tant que tu ne l’actives pas, et tu
-          peux retirer la publication à tout moment.
-        </p>
-
-        {gate === 'restricted' ? (
-          <p className="mt-4 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
-            Le partage public s’ouvre à 18 ans. Tout le reste du produit fonctionne normalement.
+      <section className="mt-8">
+        <h2 className="text-base font-bold text-white">Mon offre</h2>
+        <div className="mt-3 rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-4">
+          <p className="text-sm text-white">
+            {offre ? `${offre.name} — ${formatPrice(offre.price)} par mois` : 'Offre gratuite'}
           </p>
-        ) : (
-          <form action={toggleAdventureVisibility} className="mt-4 space-y-4 rounded-card border border-beton-300 bg-blanc p-5">
-            <Textarea
-              name="story"
-              rows={4}
-              placeholder="D’où tu pars, ce que tu construis, ce qui a été difficile…"
-              defaultValue={adventure?.story ?? ''}
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="isPublic"
-                  value="true"
-                  defaultChecked={adventure?.isPublic ?? false}
-                  className="size-4 accent-[#3E7BFA]"
-                />
-                <span className="text-sm text-encre">Rendre mon aventure publique</span>
-              </label>
-              <Button type="submit" variant="outline" size="sm">
-                Enregistrer
+          {abonnement?.currentPeriodEnd ? (
+            <p className="mt-1 text-xs text-gris-300">
+              {abonnement.cancelAtPeriodEnd ? 'Se termine le ' : 'Prochain prélèvement le '}
+              {formatDateFr(abonnement.currentPeriodEnd)}
+            </p>
+          ) : null}
+
+          {portail === 'indisponible' ? (
+            <p className="mt-3 text-xs text-gris-300">
+              Le portail de facturation n’est pas disponible : aucun paiement n’a encore été
+              enregistré sur ce compte.
+            </p>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {offre ? (
+              <form action={ouvrirPortail}>
+                <Button type="submit" taille="sm" variant="secondaire">
+                  Gérer mon abonnement
+                </Button>
+              </form>
+            ) : (
+              <Button asChild taille="sm">
+                <Link href="/offres">Voir les offres</Link>
               </Button>
-            </div>
-            {adventure?.isPublic ? (
-              <p className="text-xs text-beton-600">
-                Publiée à l’adresse /aventure/{adventure.slug}
-              </p>
-            ) : null}
-          </form>
-        )}
-      </section>
-
-      <section className="mt-10">
-        <h2 className="text-lg text-encre">Tes données</h2>
-        <div className="mt-4 rounded-card border border-beton-300 bg-blanc p-5">
-          <p className="prose-nexteo text-sm text-beton-600">
-            Consentement donné le {user.consentAcceptedAt ? formatDateFr(user.consentAcceptedAt) : '—'}
-            {user.consentVersion ? ` (version ${user.consentVersion})` : ''}. Données hébergées dans
-            l’Union européenne, conservées {user.dataRetentionMonths} mois après ta dernière activité.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Button asChild variant="outline" size="sm">
-              <a href="/api/compte/export">Exporter mes données</a>
-            </Button>
+            )}
           </div>
         </div>
       </section>
 
-      <section className="mt-10">
-        <h2 className="text-lg text-encre">Supprimer le compte</h2>
-        <p className="prose-nexteo mt-2 text-sm text-beton-600">
-          Tout est effacé : profil, réponses, parcours, progression, jalons. C’est définitif et immédiat.
+      <section className="mt-8">
+        <h2 className="text-base font-bold text-white">Mes jalons</h2>
+        {jalons.length === 0 ? (
+          <p className="mt-2 text-sm text-gris-300">Aucun pour l’instant. Le premier arrive vite.</p>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {jalons.map((jalon) => (
+              <li
+                key={jalon.id}
+                className="flex items-center justify-between gap-3 rounded-[--radius-card] border border-gris-700 bg-nuit-800 px-4 py-3"
+              >
+                <span className="text-sm text-white">{jalon.milestone.label}</span>
+                <span className="flex items-center gap-2">
+                  {jalon.declaredValue ? (
+                    <Badge ton="revenu">{jalon.declaredValue} €</Badge>
+                  ) : null}
+                  <span className="text-xs text-gris-300">{formatDateFr(jalon.reachedAt)}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="mt-2 text-xs text-gris-300">
+          {DECLARED_LABEL}. Un montant n’est vérifié que si un compte de paiement est connecté en
+          lecture.
         </p>
-        {erreur === 'confirmation' ? (
-          <p className="mt-3 text-sm text-encre">Écris exactement « supprimer » pour confirmer.</p>
-        ) : null}
-        {erreur === 'partage-mineur' ? (
-          <p className="mt-3 text-sm text-encre">Le partage public n’est pas disponible avant 18 ans.</p>
-        ) : null}
-        <form action={deleteMyAccount} className="mt-4 flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs text-beton-600">Écris « supprimer »</span>
-            <Input type="text" name="confirmation" required className="w-48" />
-          </label>
-          <Button type="submit" variant="outline" size="sm">
-            Supprimer définitivement
-          </Button>
-        </form>
       </section>
 
-      <section className="mt-12 border-t border-beton-300 pt-6">
-        <form
-          action={async () => {
-            'use server';
-            await signOut({ redirectTo: '/' });
-          }}
-        >
-          <Button type="submit" variant="ghost" size="sm">
-            Se déconnecter
+      <section className="mt-8">
+        <h2 className="text-base font-bold text-white">Mes données</h2>
+        <p className="mt-2 text-sm text-gris-300">
+          Compte créé le {formatDateFr(compte.createdAt)}. Conservation : {compte.dataRetentionMonths}{' '}
+          mois après ta dernière visite. Hébergement dans l’Union européenne.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button asChild taille="sm" variant="secondaire">
+            <a href="/api/compte/export">Exporter mes données</a>
+          </Button>
+        </div>
+      </section>
+
+      <section className="mt-10 border-t border-gris-700 pt-6">
+        <form action={deconnecter}>
+          <Button type="submit" taille="bloc" variant="secondaire">
+            Me déconnecter
           </Button>
         </form>
-        {subscription?.stripeCustomerId ? (
-          <form action={openBillingPortal} className="mt-4">
-            <Button type="submit" variant="outline" size="sm">
-              Gérer mon abonnement
-            </Button>
-            <p className="mt-2 text-xs text-beton-600">
-              Factures, moyen de paiement et résiliation, sur la page sécurisée de notre prestataire.
-              {subscription.cancelAtPeriodEnd && subscription.currentPeriodEnd
-                ? ` Ton abonnement prend fin le ${formatDateFr(subscription.currentPeriodEnd)}.`
-                : ''}
-            </p>
-          </form>
-        ) : null}
 
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <Badge variant="outline">Offre {offerFor(subscription?.plan ?? 'free').name}</Badge>
-          {session.user.role === 'admin' ? <Badge variant="acier">Administrateur</Badge> : null}
-          <Link href="/offres" className="text-sm text-acier underline-offset-4 hover:underline">
-            Voir les offres
-          </Link>
-        </div>
+        <details className="mt-6">
+          <summary className="cursor-pointer list-none text-center text-xs text-gris-300 underline underline-offset-4">
+            Supprimer mon compte
+          </summary>
+          <form action={supprimerCompte} className="mt-4 space-y-3">
+            <p className="text-xs text-gris-300">
+              La suppression efface réellement ton compte, ton diagnostic, tes idées, ton parcours et
+              tes scripts. Elle est immédiate et définitive. Tape SUPPRIMER pour confirmer.
+            </p>
+            <input
+              name="confirmation"
+              required
+              placeholder="SUPPRIMER"
+              className="min-h-[52px] w-full rounded-[--radius-bouton] border border-gris-700 bg-nuit-800 px-4 text-base text-white"
+            />
+            <Button type="submit" taille="bloc" variant="danger">
+              Supprimer définitivement
+            </Button>
+          </form>
+        </details>
       </section>
     </AppShell>
   );

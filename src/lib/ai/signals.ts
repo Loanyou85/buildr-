@@ -1,82 +1,87 @@
 import 'server-only';
-import { askAI } from './client';
+import { z } from 'zod';
+import { FRICTION_KEYS, FRICTION_LABELS } from '@/lib/ideas/referentiel';
+import { askJson } from './client';
 
 /**
- * Transforme les réponses libres d'onboarding en signaux structurés 0-1
- * (section 7, « l'IA intervient en amont »). Elle ne score pas : elle nuance.
- * Sans clé API, une heuristique lexicale locale prend le relais.
+ * Normalisation des réponses libres « ce qui t'agace » (section 8.1).
+ *
+ * Le modèle intervient **en amont** du scoring et nulle part ailleurs : il
+ * traduit du texte vers un vocabulaire fermé, il ne note rien. Sa sortie est
+ * validée contre la liste des clés connues avant d'être utilisée — une clé
+ * inventée est jetée en silence, sinon deux profils identiques
+ * n'obtiendraient pas le même classement.
  */
-export interface DerivedSignals {
-  interest_alignment?: number;
-  execution_appetite?: number;
-  content_comfort?: number;
-  commercial_comfort?: number;
-  technical_comfort?: number;
+const schema = z.object({ signals: z.array(z.string()).max(8) });
+
+export async function normaliserFrictions(reponses: { question: string; answer: string }[]): Promise<string[]> {
+  const utiles = reponses.filter((r) => r.answer.trim().length > 2);
+  if (utiles.length === 0) return [];
+
+  const vocabulaire = FRICTION_KEYS.map((key) => `- ${key} : ${FRICTION_LABELS[key]}`).join('\n');
+  const texte = utiles.map((r) => `Question : ${r.question}\nRéponse : ${r.answer}`).join('\n\n');
+
+  const resultat = await askJson(
+    `Tu traduis des témoignages en clés d'un vocabulaire fermé.
+
+Vocabulaire autorisé, et rien d'autre :
+${vocabulaire}
+
+Règles :
+- Ne renvoie que des clés de cette liste, à l'identique.
+- N'en invente aucune, ne reformule aucune clé.
+- Ne renvoie que ce que la personne décrit réellement. Si elle ne décrit
+  aucun irritant, renvoie une liste vide.
+- Au maximum huit clés.
+
+Format : { "signals": ["cle-1", "cle-2"] }`,
+    texte,
+    (value) => {
+      const parsed = schema.safeParse(value);
+      if (!parsed.success) return null;
+      return parsed.data.signals;
+    },
+  );
+
+  if (!resultat) return [];
+  // Le filtre final est la vraie garantie : même si le modèle invente, rien
+  // d'inconnu n'entre dans le moteur.
+  return [...new Set(resultat.filter((key) => FRICTION_KEYS.includes(key)))];
 }
 
-const LEXICON: Array<{ signal: keyof DerivedSignals; words: string[] }> = [
-  { signal: 'content_comfort', words: ['vidéo', 'video', 'montage', 'photo', 'filmer', 'instagram', 'tiktok', 'écrire', 'ecrire', 'contenu'] },
-  { signal: 'commercial_comfort', words: ['vendre', 'vente', 'client', 'négocier', 'negocier', 'convaincre', 'conseiller', 'organiser pour'] },
-  { signal: 'technical_comfort', words: ['ordinateur', 'code', 'logiciel', 'excel', 'tableur', 'réparer', 'reparer', 'configurer', 'installer'] },
-  { signal: 'execution_appetite', words: ['tous les jours', 'chaque semaine', 'régulièrement', 'regulierement', 'habitude', 'discipline', 'sport'] },
-];
+/** Repli déterministe quand le modèle n'est pas disponible. */
+export function frictionsParMotsCles(reponses: { answer: string }[]): string[] {
+  const texte = reponses
+    .map((r) => r.answer.toLowerCase())
+    .join(' ')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '');
 
-/** Repli local : lisible, reproductible, sans réseau. */
-export function heuristicSignals(answers: string[]): DerivedSignals {
-  const text = answers.join(' ').toLowerCase();
-  const signals: DerivedSignals = {};
+  const indices: Record<string, RegExp> = {
+    'saisie-manuelle': /recopi|a la main|ressais|double saisie/,
+    planning: /planning|horaire|roulement|equipe/,
+    'rendez-vous': /rendez-vous|rdv|agenda/,
+    'no-show': /pas venu|annul|absent|lapin/,
+    'relances-clients': /relanc|repond pas|sans nouvelle/,
+    devis: /devis/,
+    factures: /factur/,
+    'paiement-retard': /impay|retard de paiement|pas paye/,
+    'suivi-dossier': /ou ca en est|suivi|dossier|avancement/,
+    'compte-rendu': /compte rendu|compte-rendu|rapport|bilan/,
+    tableur: /excel|tableur|google sheet|classeur/,
+    'photos-chantier': /photo/,
+    'pointage-heures': /heure|pointage|pointer/,
+    stock: /stock|rupture/,
+    'commandes-fournisseurs': /commande|fournisseur/,
+    tournees: /tournee|trajet|itineraire|livraison/,
+    reservations: /reservation|booking/,
+    'notes-eleves': /eleve|adherent|progression|exercice/,
+    recrutement: /recrut|candidat|embauch/,
+    inventaire: /inventaire/,
+  };
 
-  for (const { signal, words } of LEXICON) {
-    const hits = words.filter((word) => text.includes(word)).length;
-    if (hits > 0) signals[signal] = Math.min(1, 0.5 + hits * 0.15);
-  }
-
-  // Une réponse développée traduit un engagement ; une réponse d'un mot, non.
-  const averageLength = answers.length > 0 ? text.length / answers.length : 0;
-  signals.execution_appetite = Math.min(1, Math.max(signals.execution_appetite ?? 0.5, averageLength > 80 ? 0.7 : 0.45));
-
-  return signals;
-}
-
-export async function extractSignals(
-  answers: Array<{ question: string; answer: string }>,
-): Promise<DerivedSignals> {
-  const texts = answers.map((a) => a.answer).filter((a) => a.trim().length > 0);
-  if (texts.length === 0) return {};
-
-  const fallback = heuristicSignals(texts);
-
-  const raw = await askAI({
-    system: [
-      'Tu analyses des réponses libres pour en extraire des signaux numériques.',
-      'Tu réponds UNIQUEMENT par un objet JSON, sans texte autour.',
-      'Clés autorisées : interest_alignment, execution_appetite, content_comfort, commercial_comfort, technical_comfort.',
-      'Chaque valeur est un nombre entre 0 et 1. Omets une clé si la réponse ne dit rien à son sujet.',
-      'Tu ne recommandes aucune activité et tu n’attribues aucun score de business : ce n’est pas ton rôle.',
-    ].join('\n'),
-    prompt: answers.map((a) => `Question : ${a.question}\nRéponse : ${a.answer}`).join('\n\n'),
-    maxTokens: 300,
-  });
-
-  if (!raw) return fallback;
-
-  try {
-    const jsonStart = raw.indexOf('{');
-    const jsonEnd = raw.lastIndexOf('}');
-    if (jsonStart === -1 || jsonEnd === -1) return fallback;
-    const parsed: unknown = JSON.parse(raw.slice(jsonStart, jsonEnd + 1));
-    if (typeof parsed !== 'object' || parsed === null) return fallback;
-
-    const result: DerivedSignals = { ...fallback };
-    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
-      if (key in fallback || ['interest_alignment', 'execution_appetite', 'content_comfort', 'commercial_comfort', 'technical_comfort'].includes(key)) {
-        if (typeof value === 'number' && Number.isFinite(value)) {
-          result[key as keyof DerivedSignals] = Math.max(0, Math.min(1, value));
-        }
-      }
-    }
-    return result;
-  } catch {
-    return fallback;
-  }
+  return Object.entries(indices)
+    .filter(([, motif]) => motif.test(texte))
+    .map(([key]) => key)
+    .slice(0, 8);
 }

@@ -1,7 +1,9 @@
-import * as React from 'react';
 import { cn } from '@/lib/utils';
 
-/** État vide honnête : on n'invente jamais de contenu pour remplir (garde-fou n° 1). */
+/**
+ * Jamais « aucune donnée ». Un état vide dit ce qu'on y mettra et porte le
+ * bouton pour le faire.
+ */
 export function EmptyState({
   title,
   description,
@@ -14,15 +16,10 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        'flex flex-col items-center gap-3 rounded-card border border-dashed border-beton-300 px-6 py-12 text-center',
-        className,
-      )}
-    >
-      <p className="text-lg text-encre">{title}</p>
-      <p className="prose-nexteo text-sm text-beton-600">{description}</p>
-      {action}
+    <div className={cn('rounded-[--radius-card] border border-dashed border-gris-700 p-6 text-center', className)}>
+      <p className="text-base font-bold text-white">{title}</p>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-gris-300">{description}</p>
+      {action ? <div className="mt-4 flex justify-center">{action}</div> : null}
     </div>
   );
 }

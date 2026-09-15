@@ -1,122 +1,118 @@
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { auth } from '@/server/auth';
-import { db } from '@/server/db';
-import { loadToday } from '@/server/today';
+import { redirect } from 'next/navigation';
 import { AppShell } from '@/components/app/app-shell';
-import { AssistantLauncher } from '@/components/app/assistant-launcher';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardText, CardTitle } from '@/components/ui/card';
 import { ProgressBar } from '@/components/ui/progress-bar';
-import { AdjustmentCard } from '@/components/app/adjustment-card';
-import { startStep } from '@/server/actions/journey';
+import { requireUser } from '@/server/auth';
+import { parcoursDe, etapesApplicables } from '@/server/journey';
 import { formatMinutes } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
+export const metadata = { title: 'Aujourd’hui — Nexteo' };
+
 /**
- * Écran « Aujourd'hui » — le plus important du produit (section 8.4).
- * Extrêmement simple : l'objectif, trois tâches, le temps, un bouton.
- * C'est le seul endroit de l'écran où l'orange signal apparaît.
+ * Section 2.1 : une seule action à l'écran. En haut, une phrase — ce qu'il
+ * doit faire maintenant. Un seul bouton. Le reste est secondaire.
  */
-export default async function TodayPage({
+export default async function AujourdhuiPage({
   searchParams,
 }: {
-  searchParams: Promise<{ abonnement?: string }>;
+  searchParams: Promise<{ bienvenue?: string }>;
 }) {
-  const { abonnement } = await searchParams;
-  const session = await auth();
-  if (!session?.user?.id) redirect('/connexion');
+  const { bienvenue } = await searchParams;
+  const user = await requireUser();
+  const parcours = await parcoursDe(user.id);
+  if (!parcours) redirect('/mes-idees');
 
-  const profile = await db.profile.findUnique({ where: { userId: session.user.id } });
-  if (!profile?.onboardingCompleted) redirect('/onboarding');
+  const etapes = etapesApplicables(parcours);
+  const parId = new Map(parcours.steps.map((s) => [s.stepId, s]));
+  const courante =
+    etapes.find((e) => e.id === parcours.currentStepId) ??
+    etapes.find((e) => parId.get(e.id)?.status !== 'done') ??
+    null;
 
-  const today = await loadToday(session.user.id);
-  if (!today) redirect('/recommandation');
-
-  if (today.finished) {
-    return (
-      <AppShell active="/app" aside={<AssistantLauncher stepId={null} />}>
-        <p className="text-sm text-beton-600">{today.businessName}</p>
-        <h1 className="mt-2 text-2xl">Tu as terminé le parcours.</h1>
-        <p className="prose-nexteo mt-3 text-base text-beton-600">
-          Tu es allé au bout des {today.progressPercent} % du chemin. La suite se construit sur ce que tu
-          as mis en place : regarde tes jalons et ce que tu veux consolider.
-        </p>
-        <div className="mt-8">
-          <Button asChild variant="signal" size="lg">
-            <Link href="/app/jalons">Voir mes jalons</Link>
-          </Button>
-        </div>
-      </AppShell>
-    );
-  }
+  const faites = etapes.filter((e) => parId.get(e.id)?.status === 'done').length;
 
   return (
-    <AppShell active="/app" aside={<AssistantLauncher stepId={today.step.id} />}>
-      {abonnement === 'actif' ? (
-        <p className="mb-8 rounded-card border border-niveau/40 bg-niveau-50 px-5 py-4 text-sm text-encre">
-          Ton abonnement est actif. Tout le parcours est ouvert — la suite est juste en dessous.
+    <AppShell actif="/app">
+      {bienvenue ? (
+        <Card className="mb-6 border-neo-500/30">
+          <CardTitle>Ton abonnement est actif.</CardTitle>
+          <CardText className="mt-1">Tout le parcours est ouvert. On reprend où tu en étais.</CardText>
+        </Card>
+      ) : null}
+
+      <div className="mb-6">
+        <ProgressBar value={parcours.progressPercent} />
+        <p className="mt-2 text-xs text-gris-300 tabular">
+          {faites} étape{faites > 1 ? 's' : ''} sur {etapes.length} — {parcours.progressPercent} %
+        </p>
+      </div>
+
+      {parcours.idea ? (
+        <p className="mb-6 text-sm text-gris-300">
+          Tu construis <span className="text-white">{parcours.idea.title}</span>.
         </p>
       ) : null}
 
-      <div className="flex items-baseline justify-between gap-4">
-        <p className="tabular font-display text-sm font-bold tracking-[0.08em] text-beton-600">
-          JOUR {today.day}
-        </p>
-        <p className="text-sm text-beton-600">{today.businessName}</p>
-      </div>
+      {courante ? (
+        <section>
+          <p className="text-xs uppercase tracking-wide text-gris-300">Maintenant</p>
+          <h1 className="mt-2 text-xl font-extrabold text-white">{courante.title}</h1>
+          <p className="mt-2 text-sm text-gris-300">{courante.goal}</p>
 
-      {/*
-        L'objectif du jour est le titre de l'étape : court, orienté action,
-        lisible d'un coup d'œil. La phrase d'objectif complète vit sur l'écran
-        de l'étape, là où elle sert. Ici, on préfère le vide à l'info en plus.
-      */}
-      <div className="mt-8">
-        <p className="text-sm text-beton-600">Ton objectif</p>
-        <h1 className="mt-1 text-2xl">{today.step.title}</h1>
-      </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Badge>Phase {courante.phase.order} — {courante.phase.title}</Badge>
+            <Badge>{formatMinutes(courante.estimatedMinutes)}</Badge>
+          </div>
 
-      {today.adjustment ? <AdjustmentCard id={today.adjustment.id} suggestion={today.adjustment.suggestion} /> : null}
+          <Button asChild taille="bloc" className="mt-6">
+            <Link href={`/app/etape/${courante.id}`}>Ouvrir l’étape</Link>
+          </Button>
 
-      <section className="mt-10">
-        <p className="text-sm text-beton-600">À faire maintenant</p>
-        <ol className="mt-4 space-y-3">
-          {today.tasks.map((task, index) => (
-            <li key={task.id} className="flex items-baseline gap-4">
-              <span className="tabular w-5 shrink-0 font-display text-sm font-bold text-beton-300">
-                {index + 1}
-              </span>
-              <span className="text-lg text-encre">{task.label}</span>
-            </li>
-          ))}
-        </ol>
-        {today.remainingAfter > 0 ? (
-          <p className="mt-4 text-sm text-beton-600">
-            {today.remainingAfter} autre{today.remainingAfter > 1 ? 's' : ''} après ça, sur cette étape.
+          <p className="mt-6 text-sm text-gris-300">
+            <span className="text-white">Pourquoi ça compte.</span> {courante.why}
           </p>
-        ) : null}
+        </section>
+      ) : (
+        <section>
+          <h1 className="text-xl font-extrabold text-white">Tu es arrivé au bout.</h1>
+          <p className="mt-2 text-sm text-gris-300">
+            Les treize phases sont validées. Ton produit existe, il est en ligne, et il peut
+            encaisser. La suite ne s’écrit plus ici.
+          </p>
+          <Button asChild taille="bloc" variant="secondaire" className="mt-6">
+            <Link href="/app/chemin">Revoir le chemin</Link>
+          </Button>
+        </section>
+      )}
+
+      <section className="mt-10 grid gap-3">
+        <Link
+          href="/app/prompts"
+          className="tactile flex items-center justify-between rounded-[--radius-card] border border-gris-700 bg-nuit-800 px-4 py-3 text-sm text-white"
+        >
+          Mes prompts
+          <span aria-hidden className="text-gris-300">→</span>
+        </Link>
+        <Link
+          href="/app/ajouter"
+          className="tactile flex items-center justify-between rounded-[--radius-card] border border-gris-700 bg-nuit-800 px-4 py-3 text-sm text-white"
+        >
+          Ajouter quelque chose à mon SaaS
+          <span aria-hidden className="text-gris-300">→</span>
+        </Link>
+        <Link
+          href="/app/videos"
+          className="tactile flex items-center justify-between rounded-[--radius-card] border border-gris-700 bg-nuit-800 px-4 py-3 text-sm text-white"
+        >
+          Mes trente vidéos
+          <span aria-hidden className="text-gris-300">→</span>
+        </Link>
       </section>
-
-      <p className="tabular mt-8 text-sm text-beton-600">
-        Temps estimé : {formatMinutes(today.estimatedMinutes)}
-      </p>
-
-      <form action={startStep} className="mt-8">
-        <input type="hidden" name="stepId" value={today.step.id} />
-        <Button type="submit" variant="signal" size="lg">
-          {today.step.status === 'in_progress' ? 'Continuer' : 'Commencer'}
-        </Button>
-      </form>
-
-      <div className="mt-16 border-t border-beton-300 pt-6">
-        <div className="flex items-baseline justify-between gap-4">
-          <p className="text-sm text-beton-600">
-            Étape {today.step.number} · {today.phaseTitle}
-          </p>
-          <p className="tabular text-sm text-beton-600">{today.progressPercent} %</p>
-        </div>
-        <ProgressBar value={today.progressPercent} className="mt-3" label="Progression du parcours" />
-      </div>
     </AppShell>
   );
 }

@@ -1,16 +1,16 @@
-import { exportMyData } from '@/server/actions/account';
+import { auth } from '@/server/auth';
+import { exporterDonnees } from '@/server/actions/account';
 
-/** Téléchargement de l'export RGPD, en JSON, sous le contrôle de l'utilisateur. */
+/** Export des données personnelles, au format JSON (garde-fou n° 5). */
 export async function GET() {
-  try {
-    const json = await exportMyData();
-    return new Response(json, {
-      headers: {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Content-Disposition': `attachment; filename="nexteo-mes-donnees-${new Date().toISOString().slice(0, 10)}.json"`,
-      },
-    });
-  } catch {
-    return new Response('Connexion requise', { status: 401 });
-  }
+  const session = await auth();
+  if (!session?.user?.id) return new Response('Non connecté', { status: 401 });
+
+  const donnees = await exporterDonnees(session.user.id);
+  return new Response(JSON.stringify(donnees, null, 2), {
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'content-disposition': `attachment; filename="nexteo-mes-donnees-${new Date().toISOString().slice(0, 10)}.json"`,
+    },
+  });
 }

@@ -1,0 +1,18 @@
+# Preuve de revenu de la page d'accueil
+
+`stripe-revenue.png` est **une capture réelle du tableau de bord Stripe du
+fondateur**. Elle n'est pas fournie avec le code.
+
+Dépose le fichier ici sous le nom exact `stripe-revenue.png`. Le composant du
+téléphone le détecte au rendu et remplace automatiquement le visuel
+d'attente ; aucune modification de code n'est nécessaire.
+
+Tant que le fichier n'est pas là, la page affiche `placeholder.svg`, qui dit
+explicitement qu'il s'agit d'une image à remplacer.
+
+**Ne remplace jamais ce visuel d'attente par une fausse capture Stripe
+crédible.** Une allégation chiffrée présentée comme un résultat relève de la
+pratique commerciale trompeuse (article L121-2 du code de la consommation).
+
+La mention « Résultats du fondateur. Aucun résultat n'est garanti. » qui
+accompagne l'image est obligatoire et ne doit jamais être retirée.

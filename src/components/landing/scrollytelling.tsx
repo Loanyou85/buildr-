@@ -1,121 +1,99 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import { motion, useMotionValueEvent, useReducedMotion, useScroll } from 'motion/react';
-import { PhoneMockup, type PhoneScreen } from '@/components/landing/phone-mockup';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 
-/**
- * Section scrollytelling (pattern 5) : un bloc sticky sur plusieurs hauteurs
- * d'écran. Le téléphone reste fixe, son écran change au fil du scroll pour
- * montrer jour 1, jour 12, jour 47. C'est la démonstration centrale du produit.
- */
-const SCREENS: Array<PhoneScreen & { title: string; caption: string }> = [
+const PROMESSES = [
   {
-    day: 1,
-    business: 'Agence UGC',
-    goal: 'Choisir ta niche',
-    tasks: ['Lister tes terrains possibles', 'Filtrer avec les 4 critères', 'Écrire ta niche en une phrase'],
-    minutes: 45,
-    percent: 4,
-    title: 'Jour 1 — tu sais par où commencer',
-    caption:
-      'Pas de tableau de bord à déchiffrer. Une étape, son objectif, trois actions et un bouton. Tu n’as rien à décider d’autre.',
+    titre: 'Trouve ton idée.',
+    texte:
+      'Une idée construite à partir de ton profil : ce que tu sais faire, les milieux que tu connais de l’intérieur, tes contraintes. Pas une liste d’idées génériques.',
+    ecran: ['Ton idée', 'Suivi de séances pour cabinets de kiné', '— parce que tu connais ce milieu'],
   },
   {
-    day: 12,
-    business: 'Agence UGC',
-    goal: 'Construire ton offre',
-    tasks: ['Choisir ton livrable de base', 'Écrire le bénéfice', 'Fixer tes trois prix'],
-    minutes: 50,
-    percent: 27,
-    title: 'Jour 12 — tu as quelque chose à vendre',
-    caption:
-      'Ton offre est chiffrée, tes prix sont écrits, tes réponses aux objections sont prêtes. Le parcours t’a fait produire, pas regarder des vidéos.',
+    titre: 'Construis-le sans coder.',
+    texte:
+      'De la page blanche au site en ligne qui encaisse, avec Claude, GitHub, Vercel et Stripe. Tous les prompts à copier-coller, dans l’ordre, y compris ceux qui réparent quand ça casse.',
+    ecran: ['Phase 5 sur 13', 'Mettre en ligne', 'Copier le prompt →'],
   },
   {
-    day: 47,
-    business: 'Agence UGC',
-    goal: 'Faire signer ton premier client',
-    tasks: ['Obtenir l’accord écrit', 'Émettre l’acompte', 'Marquer le jalon'],
-    minutes: 30,
-    percent: 78,
-    title: 'Jour 47 — ton premier client',
-    caption:
-      'Tu as prospecté, relancé, mené un rendez-vous et envoyé un devis. Chaque étape a été validée avant la suivante.',
+    titre: 'Vends-le.',
+    texte:
+      'Trente scripts de vidéos générés pour ton produit, prêts à tourner, un par jour pendant un mois. Les six premiers se tournent avant d’avoir le moindre utilisateur.',
+    ecran: ['Jour 1 sur 30', 'Le problème', '« Si tu es kiné, tu perds… »'],
   },
 ];
 
+/**
+ * Bloc collant (section 5.1.5) : le téléphone reste fixe pendant que son
+ * écran change au défilement, pour montrer les trois promesses.
+ */
 export function Scrollytelling() {
-  const reduced = useReducedMotion();
   const ref = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState(0);
+  const [actif, setActif] = useState(0);
 
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
+  useEffect(() => {
+    const noeud = ref.current;
+    if (!noeud) return;
+    const sections = Array.from(noeud.querySelectorAll<HTMLElement>('[data-promesse]'));
 
-  useMotionValueEvent(scrollYProgress, 'change', (value) => {
-    const index = Math.min(SCREENS.length - 1, Math.floor(value * SCREENS.length));
-    setActive(index);
-  });
+    const observateur = new IntersectionObserver(
+      (entrees) => {
+        for (const entree of entrees) {
+          if (entree.isIntersecting) {
+            setActif(Number((entree.target as HTMLElement).dataset.promesse));
+          }
+        }
+      },
+      { rootMargin: '-45% 0px -45% 0px' },
+    );
 
-  const current = SCREENS[active]!;
+    for (const section of sections) observateur.observe(section);
+    return () => observateur.disconnect();
+  }, []);
+
+  const courante = PROMESSES[actif] ?? PROMESSES[0]!;
 
   return (
-    <section id="chemin" ref={ref} className="relative bg-plan-900 text-white" style={{ height: `${SCREENS.length * 100}vh` }}>
-      <div className="sticky top-0 flex h-dvh items-center overflow-hidden">
-        <div className="glow-acier pointer-events-none absolute left-1/4 top-1/2 size-[560px] -translate-y-1/2" aria-hidden />
-
-        <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 px-5 lg:grid-cols-2">
-          <div>
-            <p className="text-sm text-white/50">La boucle du produit</p>
-            <h2 className="mt-4 font-display text-2xl font-extrabold leading-[1.12] tracking-[-0.02em] sm:text-3xl sm:leading-[1.08]">
-              Tu montes, une étape à la fois.
-            </h2>
-
-            <div className="mt-10 space-y-6">
-              {SCREENS.map((screen, index) => (
-                <button
-                  key={screen.day}
-                  type="button"
-                  onClick={() => setActive(index)}
-                  className={cn(
-                    'block w-full border-l-2 py-2 pl-5 text-left transition-colors',
-                    index === active ? 'border-signal' : 'border-white/15',
-                  )}
-                >
-                  <p
-                    className={cn(
-                      'font-display text-lg font-bold tracking-[-0.02em] transition-colors',
-                      index === active ? 'text-white' : 'text-white/40',
-                    )}
-                  >
-                    {screen.title}
-                  </p>
-                  <motion.p
-                    initial={false}
-                    animate={{ opacity: index === active ? 1 : 0, height: index === active ? 'auto' : 0 }}
-                    transition={{ duration: reduced ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
-                    className="prose-nexteo overflow-hidden text-sm text-white/60"
-                  >
-                    <span className="block pt-2">{screen.caption}</span>
-                  </motion.p>
-                </button>
-              ))}
+    <div ref={ref} className="md:grid md:grid-cols-2 md:gap-12">
+      <div className="md:sticky md:top-24 md:h-[60vh] md:self-start">
+        <div className="sticky top-20 z-10 mx-auto w-[220px] py-4 md:static md:w-[260px] md:py-0">
+          <div className="relative rounded-[32px] border border-gris-700 bg-nuit-800 p-4">
+            <div aria-hidden className="halo-neo absolute -inset-10 -z-10 rounded-full" />
+            <p className="text-xs uppercase tracking-wide text-gris-300">{courante.ecran[0]}</p>
+            <p className="mt-3 text-base font-bold leading-snug text-white">{courante.ecran[1]}</p>
+            <p className="mt-2 text-xs text-neo-100">{courante.ecran[2]}</p>
+            <div className="mt-6 h-1 w-full overflow-hidden rounded-full bg-nuit-700">
+              <div
+                className="h-full rounded-full bg-neo-500 transition-[width] duration-500"
+                style={{
+                  width: `${((actif + 1) / PROMESSES.length) * 100}%`,
+                  transitionTimingFunction: 'var(--ease-nexteo)',
+                }}
+              />
             </div>
-          </div>
-
-          <div className="relative">
-            <motion.div
-              key={current.day}
-              initial={reduced ? false : { opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: reduced ? 0 : 0.3, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <PhoneMockup screen={current} parallax={false} />
-            </motion.div>
           </div>
         </div>
       </div>
-    </section>
+
+      <ol className="mt-8 space-y-24 md:mt-0 md:space-y-[40vh]">
+        {PROMESSES.map((promesse, index) => (
+          <li
+            key={promesse.titre}
+            data-promesse={index}
+            className={cn(
+              'transition-opacity duration-300',
+              actif === index ? 'opacity-100' : 'opacity-50',
+            )}
+          >
+            <p className="font-display text-sm font-extrabold tabular text-neo-500">
+              {String(index + 1).padStart(2, '0')}
+            </p>
+            <h3 className="mt-2 text-lg font-extrabold text-white">{promesse.titre}</h3>
+            <p className="mt-2 text-sm text-gris-300">{promesse.texte}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }

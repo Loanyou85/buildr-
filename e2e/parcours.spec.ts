@@ -1,392 +1,273 @@
 import { expect, test } from '@playwright/test';
-import { cleanupUser, completeProfile, createAccount, db, signIn, TEST_PASSWORD } from './fixtures';
-import { indexOfQuestion } from '../src/lib/onboarding/questions';
+import { adresseDeTest, db, nettoyerComptesDeTest, supprimerCompteDeTest } from './fixtures';
 
-const EMAIL = 'e2e-parcours@nexteo.test';
+const MOBILE = { width: 390, height: 844 };
 
-test.describe('Le chemin, de bout en bout', () => {
-  test.afterAll(async () => {
-    await cleanupUser(EMAIL);
-    await db.$disconnect();
-  });
+test.afterAll(async () => {
+  await nettoyerComptesDeTest();
+  await db.$disconnect();
+});
 
-  test('inscription en trois champs, puis reconnexion', async ({ page }) => {
-    const email = 'e2e-inscription@nexteo.test';
-    await cleanupUser(email);
+test.describe('la page d’accueil', () => {
+  test.use({ viewport: MOBILE });
 
-    await page.goto('/inscription');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Commencer ton aventure');
-
-    // Le prénom est demandé au-dessus de l'adresse et du mot de passe.
-    const labels = await page.locator('form label span').first().innerText();
-    expect(labels).toContain('prénom');
-
-    await page.getByLabel('Ton prénom').fill('Camille');
-    await page.getByLabel('Ton adresse e-mail').fill(email);
-    await page.getByLabel('Ton mot de passe').fill(TEST_PASSWORD);
-    await page.getByRole('button', { name: 'Créer mon compte' }).click();
-
-    // Aucun écran d'attente d'e-mail : on entre directement dans le diagnostic.
-    await page.waitForURL('**/onboarding**');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Quel âge as-tu');
-
-    const created = await db.user.findUniqueOrThrow({ where: { email } });
-    expect(created.name).toBe('Camille');
-    expect(created.passwordHash).toBeTruthy();
-    // Le mot de passe n'est jamais stocké en clair.
-    expect(created.passwordHash).not.toContain(TEST_PASSWORD);
-    expect(created.consentAcceptedAt).not.toBeNull();
-
-    // Déconnexion puis reconnexion avec les mêmes identifiants.
-    await page.context().clearCookies();
-    await signIn(page, email);
-    await expect(page).toHaveURL(/\/(app|onboarding)/);
-
-    await page.goto('about:blank');
-    await cleanupUser(email);
-  });
-
-  test('un mot de passe erroné est refusé sans dire lequel des deux est faux', async ({ page }) => {
-    const email = 'e2e-mauvais-mdp@nexteo.test';
-    await createAccount({ email });
-
-    await page.goto('/connexion');
-    await page.getByLabel('Ton adresse e-mail').fill(email);
-    await page.getByLabel('Ton mot de passe').fill('mauvaismotdepasse');
-    await page.getByRole('button', { name: 'Se connecter' }).click();
-
-    await expect(page.getByText('Adresse e-mail ou mot de passe incorrect.')).toBeVisible();
-    await expect(page).toHaveURL(/connexion/);
-
-    await page.goto('about:blank');
-    await cleanupUser(email);
-  });
-
-  test('landing publique : une seule action principale, aucun faux témoignage', async ({ page }) => {
+  test('annonce ce que fait le produit et porte la mention obligatoire', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Construis-le');
-    await expect(page.getByRole('link', { name: 'Trouver mon business' }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'Crée ton SaaS de A à Z, étape par étape.',
+    );
 
-    // Garde-fou n° 1 : sans aventure publiée, le mur reste vide et le dit.
-    await expect(page.getByText('Aucune aventure partagée pour l’instant.')).toBeVisible();
+    // Section 6.2 : cette mention n'est pas optionnelle et doit être visible
+    // sans scroll supplémentaire.
+    const mention = page.getByText('Résultats du fondateur. Aucun résultat n’est garanti.');
+    await expect(mention).toBeVisible();
 
-    // Garde-fou n° 2 : aucune promesse de revenu nulle part dans la page.
-    const body = (await page.locator('body').innerText()).toLowerCase();
-    for (const forbidden of ['deviens riche', 'revenus passifs', 'argent facile', 'liberté financière']) {
-      expect(body, `formulation interdite trouvée : ${forbidden}`).not.toContain(forbidden);
+    // Section 2.2 : une barre d'action collée en bas, toujours visible.
+    const barre = page.getByRole('link', { name: /Trouver mon idée/ }).last();
+    await expect(barre).toBeVisible();
+  });
+
+  test('ne fabrique aucun chiffre et n’invente aucun témoignage', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByText('Personne n’a encore partagé la sienne.')).toBeVisible();
+
+    const texte = (await page.locator('body').innerText()).toLowerCase();
+    for (const interdit of ['revenus passifs', 'deviens riche', 'argent facile', 'garanti de gagner']) {
+      expect(texte, `la landing contient « ${interdit} »`).not.toContain(interdit);
     }
   });
 
-  test('du diagnostic au premier « J’ai terminé »', async ({ page }) => {
-    const user = await createAccount({ email: EMAIL, pro: true });
-    await completeProfile(user.id);
-    await signIn(page, EMAIL);
+  test('ne déborde jamais horizontalement et garde des cibles de 48 px', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForLoadState('networkidle');
 
-    // --- Recommandation ---
-    await page.goto('/recommandation');
-    await expect(page.getByText('Ton diagnostic est prêt.')).toBeVisible();
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Agence UGC');
-    // Les chiffres de l'analyse sont sur le diagnostic, plus sur un écran à part.
-    await expect(page.getByText('activités comparées')).toBeVisible();
-    const diagnostic = await page.locator('body').innerText();
-    expect(diagnostic).not.toMatch(/\b1\s?200\b/);
-    await expect(page.getByRole('heading', { name: 'Pourquoi cette activité te correspond' })).toBeVisible();
+    const debordement = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(debordement, 'débordement horizontal en pixels').toBeLessThanOrEqual(1);
 
-    // Une seule action en orange signal sur l'écran.
-    await expect(page.locator('.bg-signal')).toHaveCount(1);
+    const tropPetites = await page.evaluate(() => {
+      const cibles = document.querySelectorAll('a, button, summary, [role="button"]');
+      const fautives: string[] = [];
+      for (const cible of cibles) {
+        const rect = cible.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) continue;
+        if (rect.height < 48) fautives.push(`${cible.tagName} « ${cible.textContent?.trim().slice(0, 30)} »`);
+      }
+      return fautives;
+    });
+    expect(tropPetites).toEqual([]);
+  });
+});
 
-    await page.getByRole('button', { name: 'Commencer' }).click();
+test.describe('le diagnostic', () => {
+  test.use({ viewport: MOBILE });
 
-    // --- La garantie, avant de parler d'argent ---
-    await page.waitForURL('**/garantie**');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('remboursé');
-    // Les conditions sont sur le même écran que la promesse, pas ailleurs.
-    await expect(page.getByText('Pour qui')).toBeVisible();
-    await expect(page.getByText('Comment demander')).toBeVisible();
-    await expect(page.getByText('Sous quel délai')).toBeVisible();
-    await expect(page.getByText(/ne s’y substitue pas/)).toBeVisible();
+  test('se traverse en entier et rend trois idées justifiées', async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.goto('/diagnostic');
 
-    const garantie = (await page.locator('body').innerText()).toLowerCase();
-    for (const promesse of ['tu vas gagner', 'revenus garantis', 'deviens riche']) {
-      expect(garantie, promesse).not.toContain(promesse);
-    }
+    // 0 — âge
+    await page.getByRole('button', { name: '18 à 24 ans' }).click();
+    await page.waitForURL(/q=1/);
 
-    await page.getByRole('link', { name: 'Voir les offres' }).click();
+    // 1 — situation
+    await page.getByRole('button', { name: 'Je suis étudiant' }).click();
+    await page.waitForURL(/q=2/);
 
-    // --- Les offres ---
-    await page.waitForURL('**/offres**');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Jusqu’où veux-tu aller');
-    await expect(page.getByRole('heading', { level: 2 })).toHaveCount(3);
-    await expect(page.getByText('29 €')).toBeVisible();
-    // Une seule offre est mise en avant : l'orange ne désigne qu'une action.
-    await expect(page.locator('.bg-signal')).toHaveCount(1);
+    // 2 — secteurs connus de l'intérieur
+    await page.getByText('Restauration', { exact: true }).click();
+    await page.getByRole('button', { name: 'Suivant' }).click();
+    await page.waitForURL(/q=3/);
 
-    await page.getByRole('button', { name: 'Commencer gratuitement' }).click();
+    // 3 — comment il connaît ce milieu
+    await page.getByRole('button', { name: 'J’y ai travaillé plusieurs années' }).click();
+    await page.waitForURL(/q=4/);
 
-    // --- Aujourd'hui ---
-    await page.waitForURL('**/app');
-    await expect(page.getByText('JOUR 1')).toBeVisible();
-    await expect(page.getByText('Ton objectif')).toBeVisible();
-    await expect(page.getByText('À faire maintenant')).toBeVisible();
-    await expect(page.getByText(/Temps estimé/)).toBeVisible();
-    await expect(page.locator('.bg-signal')).toHaveCount(1);
+    // 4 — compétences
+    await page.getByRole('button', { name: 'M’organiser et organiser les autres' }).click();
+    await page.getByRole('button', { name: 'M’occuper des clients' }).click();
+    await page.getByRole('button', { name: 'Suivant' }).click();
+    await page.waitForURL(/q=5/);
 
-    // --- Étape détaillée ---
-    await page.getByRole('button', { name: 'Commencer' }).click();
-    await page.waitForURL('**/app/etape/**');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Choisir ta niche');
-    await expect(page.getByText('Pourquoi cette étape')).toBeVisible();
+    // 5 — centres d'intérêt
+    await page.getByText('La cuisine', { exact: true }).click();
+    await page.getByRole('button', { name: 'Suivant' }).click();
+    await page.waitForURL(/q=6/);
 
-    // Le niveau de détail est une fonctionnalité : les actions sont exécutables.
-    await expect(page.getByText('Ouvre une note vide')).toBeVisible();
-    await expect(page.getByText(/Exemple :/).first()).toBeVisible();
+    // 6 et 7 — les réponses libres
+    await page
+      .getByRole('textbox')
+      .fill('Le planning de la semaine se fait sur un tableur que personne ne comprend.');
+    await page.getByRole('button', { name: 'Suivant' }).click();
+    await page.waitForURL(/q=7/);
 
-    // Le bouton de validation est inactif tant que les critères ne sont pas cochés.
-    const finish = page.getByRole('button', { name: 'J’ai terminé' });
-    await expect(finish).toBeDisabled();
+    await page.getByRole('textbox').fill('On ne sait jamais qui devait venir ce matin.');
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await page.waitForURL(/q=8/);
 
-    // --- Validation ---
-    const requiredCheckpoints = page.locator('button[aria-pressed]');
-    const count = await requiredCheckpoints.count();
-    for (let index = 0; index < count; index += 1) {
-      await page.locator('button[aria-pressed]').nth(index).click();
+    // 8 — curseur : personnes joignables
+    await page.getByRole('button', { name: 'Suivant' }).click();
+    await page.waitForURL(/q=9/);
+
+    // 9 à 15
+    await page.getByRole('button', { name: '10 à 15 heures' }).click();
+    await page.waitForURL(/q=10/);
+    await page.getByRole('button', { name: 'Jusqu’à 100 €' }).click();
+    await page.waitForURL(/q=11/);
+    await page.getByRole('button', { name: 'Je bidouille des tableurs et des outils en ligne' }).click();
+    await page.waitForURL(/q=12/);
+    await page.getByRole('button', { name: 'Suivant' }).click();
+    await page.waitForURL(/q=13/);
+    await page.getByRole('button', { name: 'Dans trois à six mois' }).click();
+    await page.waitForURL(/q=14/);
+    await page.getByRole('button', { name: 'Oui, ça ne me dérange pas' }).click();
+    await page.waitForURL(/q=15/);
+    await page.getByRole('button', { name: 'Oui, je peux le faire' }).click();
+
+    // L'écran d'analyse s'envoie tout seul.
+    await page.waitForURL('**/mes-idees', { timeout: 60_000 });
+
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Trois idées');
+    await expect(page.getByText('Celle qui te ressemble le plus')).toBeVisible();
+
+    // Section 8.3 : chaque idée cite les éléments du profil qui l'ont produite.
+    await expect(page.getByRole('heading', { name: 'Pourquoi elle sort pour toi' }).first()).toBeVisible();
+    await expect(page.getByText(/Secteur « restauration » : tu y as travaillé/i).first()).toBeVisible();
+
+    // Le profil du serveur doit sortir une idée de restauration en tête.
+    const principale = page.getByRole('heading', { level: 2 }).first();
+    await expect(principale).toContainText(/restaurant/i);
+  });
+
+  test('un mineur de moins de seize ans est arrêté avant le compte', async ({ page }) => {
+    await page.goto('/diagnostic');
+    await page.getByRole('button', { name: 'Moins de 16 ans' }).click();
+    await page.waitForURL('**/trop-jeune');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'On ne peut pas te créer de compte',
+    );
+  });
+});
+
+test.describe('sans JavaScript', () => {
+  test.use({ viewport: MOBILE, javaScriptEnabled: false });
+
+  /**
+   * Régression : une version contrôlée des cases ne dessinait la coche
+   * qu'après l'hydratation, et un clic avant celle-ci était annulé.
+   */
+  test('les cases se cochent et le formulaire part quand même', async ({ page }) => {
+    await page.goto('/diagnostic?q=2');
+
+    const label = page.getByText('Restauration', { exact: true });
+    await label.click();
+
+    const coche = page.locator('input[type="checkbox"][value="restauration"]');
+    await expect(coche).toBeChecked();
+
+    await page.getByRole('button', { name: 'Suivant' }).click();
+    await page.waitForURL(/q=3/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Tu connais ce milieu comment');
+  });
+
+  test('un choix unique avance tout seul, sans bouton à chercher', async ({ page }) => {
+    await page.goto('/diagnostic?q=1');
+    await page.getByRole('button', { name: 'Je suis salarié' }).click();
+    await page.waitForURL(/q=2/);
+  });
+});
+
+test.describe('le compte et le parcours', () => {
+  test.use({ viewport: MOBILE });
+
+  test('de l’idée choisie au premier critère validé', async ({ page }) => {
+    test.setTimeout(180_000);
+    const email = adresseDeTest();
+
+    // Un profil complet, posé directement : le diagnostic est déjà couvert.
+    await page.goto('/diagnostic');
+    await page.getByRole('button', { name: '25 à 34 ans' }).click();
+    await page.waitForURL(/q=1/);
+    await page.getByRole('button', { name: 'Je suis salarié' }).click();
+    await page.waitForURL(/q=2/);
+    await page.getByText('Transport et livraison', { exact: true }).click();
+    await page.getByRole('button', { name: 'Suivant' }).click();
+    await page.waitForURL(/q=3/);
+    await page.getByRole('button', { name: 'J’y ai travaillé plusieurs années' }).click();
+    await page.waitForURL(/q=4/);
+
+    // Le reste du diagnostic, en sautant ce qui est facultatif.
+    for (const cible of [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]) {
+      await page.goto(`/diagnostic?q=${cible}`);
+      const suivant = page.getByRole('button', { name: /Suivant|Continuer/ });
+      if (await suivant.count()) {
+        const zone = page.getByRole('textbox');
+        if (await zone.count()) await zone.fill('Les preuves de livraison sont des photos perdues.');
+        await suivant.first().click();
+      } else {
+        await page.getByRole('button', { name: /.+/ }).nth(1).click();
+      }
       await page.waitForLoadState('networkidle');
     }
 
-    await expect(page.getByRole('button', { name: 'J’ai terminé' })).toBeEnabled();
-    await page.getByRole('button', { name: 'J’ai terminé' }).click();
+    await page.goto('/diagnostic/analyse');
+    await page.waitForURL('**/mes-idees', { timeout: 60_000 });
 
-    await page.waitForURL(/franchie=1/);
-    await expect(page.getByText('Étape 1 franchie')).toBeVisible();
+    await page.getByRole('button', { name: 'Je construis celle-là' }).click();
+    await page.waitForURL(/\/inscription/);
 
-    // --- La progression a avancé, l'étape suivante est ouverte ---
-    await page.goto('/app/chemin');
-    await expect(page.getByText('Étape en cours')).toBeVisible();
+    await page.getByLabel('Ton prénom').fill('Camille');
+    await page.getByLabel('Ton adresse e-mail').fill(email);
+    await page.getByLabel('Ton mot de passe').fill('un-mot-de-passe-assez-long');
+    await page.getByRole('checkbox').check();
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
 
-    const userJourney = await db.userJourney.findFirstOrThrow({ where: { userId: user.id } });
-    expect(userJourney.progressPercent).toBeGreaterThan(0);
+    // Le point de bascule : les offres, juste après la restitution.
+    await page.waitForURL('**/offres', { timeout: 30_000 });
+    await expect(page.getByText('7,99 €')).toBeVisible();
+    await expect(page.getByText('18,99 €')).toBeVisible();
+    await expect(page.getByText('35,99 €')).toBeVisible();
 
-    const nextStep = await db.stepProgress.findFirstOrThrow({
-      where: { userJourneyId: userJourney.id, step: { number: 2 } },
-    });
-    expect(nextStep.status).toBe('available');
-  });
-
-  test('une offre payante enregistre le choix sans jamais simuler un paiement', async ({ page }) => {
-    const email = 'e2e-offres@nexteo.test';
-    const user = await createAccount({ email });
-    await completeProfile(user.id);
-    await signIn(page, email);
-
-    await page.goto('/recommandation');
-    await page.getByRole('button', { name: 'Commencer' }).click();
-    await page.waitForURL('**/garantie**');
-    await page.goto('/offres');
-
-    await page.getByRole('button', { name: 'Choisir Parcours' }).click();
-    await page.waitForURL(/paiement=indisponible/);
-    await expect(page.getByText(/aucun montant ne t’a été débité/)).toBeVisible();
-
-    const subscription = await db.subscription.findUniqueOrThrow({ where: { userId: user.id } });
-    // L'intention est retenue, l'accès ne l'est pas.
-    expect(subscription.intendedPlan).toBe('pro');
-    expect(subscription.plan).toBe('free');
-
-    await page.goto('about:blank');
-    await cleanupUser(email);
-  });
-
-  test('la progression ne recule jamais', async ({ page }) => {
-    const email = 'e2e-progression@nexteo.test';
-    const user = await createAccount({ email, pro: true });
-    await completeProfile(user.id);
-    await signIn(page, email);
-
-    await page.goto('/recommandation');
-    await page.getByRole('button', { name: 'Commencer' }).click();
-    await page.waitForURL('**/garantie**');
-    await page.goto('/offres');
-    await page.getByRole('button', { name: 'Commencer gratuitement' }).click();
+    // L'offre gratuite existe, mais n'est pas une quatrième carte.
+    await page.getByRole('link', { name: 'Continuer sans payer' }).click();
     await page.waitForURL('**/app');
 
-    const journey = await db.userJourney.findFirstOrThrow({ where: { userId: user.id } });
-    await db.userJourney.update({ where: { id: journey.id }, data: { progressPercent: 60 } });
+    await expect(page.getByText('Maintenant')).toBeVisible();
+    await page.getByRole('link', { name: 'Ouvrir l’étape' }).click();
+    await page.waitForURL(/\/app\/etape\//);
 
-    // On coche puis on décoche : la barre ne redescend pas.
-    await page.goto('/app');
-    await page.getByRole('button', { name: 'Commencer' }).click();
-    await page.waitForURL('**/app/etape/**');
+    // Le bouton de validation reste fermé tant que tout n'est pas coché.
+    const valider = page.getByRole('button', { name: /Encore \d+ case/ });
+    await expect(valider).toBeDisabled();
 
-    const checkpoint = page.locator('button[aria-pressed]').first();
-    await checkpoint.click();
+    // Un critère qui demande une preuve refuse d'être coché tant qu'elle
+    // manque, et le dit.
+    const premiere = page.locator('button[aria-pressed]').first();
+    await premiere.click();
+    await expect(page.getByText('Colle d’abord ce qui est demandé juste au-dessus.')).toBeVisible();
+    await expect(premiere).toHaveAttribute('aria-pressed', 'false');
+
+    // Avec la preuve, la case se coche et le reste après rechargement.
+    await page.getByRole('textbox').first().fill('Un suivi de livraisons pour transporteurs.');
+    await premiere.click();
+    await expect(premiere).toHaveAttribute('aria-pressed', 'true');
+    // La coche s'affiche avant la réponse du serveur : on attend que
+    // l'enregistrement ait abouti avant de recharger, sinon on teste une course.
     await page.waitForLoadState('networkidle');
-    await page.locator('button[aria-pressed="true"]').first().click();
-    await page.waitForLoadState('networkidle');
+    await page.reload();
+    await expect(page.locator('button[aria-pressed="true"]').first()).toBeVisible();
 
-    const after = await db.userJourney.findUniqueOrThrow({ where: { id: journey.id } });
-    expect(after.progressPercent).toBeGreaterThanOrEqual(60);
+    // Le parcours payant reste fermé sans paiement.
+    await page.goto('/app/chemin');
+    await expect(page.getByRole('link', { name: 'Ouvrir la suite du parcours' }).first()).toBeVisible();
 
-    // On quitte la page avant de supprimer l'utilisateur : sinon une
-    // revalidation encore en vol interroge des lignes qui viennent de partir.
-    await page.goto('about:blank');
-    await cleanupUser(email);
-  });
-
-  test('les cases se cochent visiblement, même avant le chargement du script', async ({ browser }) => {
-    const email = 'e2e-coche@nexteo.test';
-    const user = await createAccount({ email });
-    await db.profile.create({ data: { userId: user.id, age: 29 } });
-
-    // JavaScript coupé : c'est l'état d'une page dont le script n'a pas encore
-    // chargé. Le tunnel doit rester entièrement utilisable.
-    const context = await browser.newContext({ javaScriptEnabled: false });
-    const page = await context.newPage();
-    await page.goto('/connexion');
-    await page.getByLabel('Ton adresse e-mail').fill(email);
-    await page.getByLabel('Ton mot de passe').fill(TEST_PASSWORD);
-    await page.getByRole('button', { name: 'Se connecter' }).click();
-    await page.waitForURL(/\/(app|onboarding)/);
-
-    const skillsIndex = indexOfQuestion('skills');
-    await page.goto(`/onboarding?q=${skillsIndex}`);
-
-    const card = page.locator('form label:has(input[type="checkbox"])').first();
-    await card.click();
-
-    // La coche est dessinée en CSS : elle apparaît sans attendre React.
-    const mark = card.locator('span').first();
-    await expect(mark).toHaveCSS('background-color', 'rgb(62, 123, 250)');
-
-    await page.getByRole('button', { name: 'Continuer' }).click();
-    await page.waitForURL(`**/onboarding?q=${skillsIndex + 1}`);
-
-    const saved = await db.userSkill.count({ where: { profile: { userId: user.id } } });
-    expect(saved).toBe(1);
-
-    await context.close();
-    await cleanupUser(email);
-  });
-
-  test('l’objectif de revenu se règle avec une barre, de 0 à 50 000 €', async ({ page }) => {
-    const email = 'e2e-curseur@nexteo.test';
-    const user = await createAccount({ email });
-    await db.profile.create({ data: { userId: user.id, age: 29 } });
-    await signIn(page, email);
-
-    const goalIndex = indexOfQuestion('financialGoal');
-    await page.goto(`/onboarding?q=${goalIndex}`);
-    const slider = page.locator('input[type="range"]');
-    await expect(slider).toHaveAttribute('min', '0');
-    await expect(slider).toHaveAttribute('max', '50000');
-
-    await slider.fill('7500');
-    await expect(page.getByText('7 500', { exact: false })).toBeVisible();
-    await page.getByRole('button', { name: 'Continuer' }).click();
-    // Attendre la question suivante, pas « une URL contenant q » : la page
-    // courante satisfait déjà cette condition, et la base serait lue trop tôt.
-    await page.waitForURL(`**/onboarding?q=${goalIndex + 1}`);
-
-    const profile = await db.profile.findUniqueOrThrow({ where: { userId: user.id } });
-    expect(profile.financialGoal).toBe(7500);
+    const abonnement = await db.subscription.findFirst({ where: { user: { email } } });
+    expect(abonnement?.plan, 'aucun accès payant ne doit être ouvert sans paiement').toBe('free');
+    expect(abonnement?.intendedPlan).toBeNull();
 
     await page.goto('about:blank');
-    await cleanupUser(email);
-  });
-
-  test('une seule question alimente les sept contraintes qui éliminent', async ({ page }) => {
-    const email = 'e2e-contraintes@nexteo.test';
-    const user = await createAccount({ email });
-    await db.profile.create({ data: { userId: user.id, age: 29 } });
-    await signIn(page, email);
-
-    await page.goto(`/onboarding?q=${indexOfQuestion('readiness')}`);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('prêt à faire');
-
-    // On coche deux acceptations, on laisse le reste décoché.
-    await page.getByText('Apparaître à l’image').click();
-    await page.getByText('Contacter des inconnus').click();
-    await page.getByRole('button', { name: 'Continuer' }).click();
-    await page.waitForURL(`**/onboarding?q=${indexOfQuestion('readiness') + 1}`);
-
-    const profile = await db.profile.findUniqueOrThrow({ where: { userId: user.id } });
-    expect(profile.showsFace).toBe(true);
-    expect(profile.likesStrangers).toBe(true);
-    // Décoché vaut refus explicite : c'est ce qui écarte des activités.
-    expect(profile.createsContent).toBe(false);
-    expect(profile.likesSelling).toBe(false);
-    // Refuser le déplacement revient à vouloir travailler à distance.
-    expect(profile.workMode).toBe('remote');
-
-    await page.goto('about:blank');
-    await cleanupUser(email);
-  });
-
-  test('le temps et le budget mensuels se déduisent, sans question de plus', async ({ page }) => {
-    const email = 'e2e-derive@nexteo.test';
-    const user = await createAccount({ email });
-    await db.profile.create({ data: { userId: user.id, age: 29 } });
-    await signIn(page, email);
-
-    await page.goto(`/onboarding?q=${indexOfQuestion('hoursPerWeek')}`);
-    await page.getByRole('button', { name: '10 à 20 heures' }).click();
-    await page.waitForURL(`**/onboarding?q=${indexOfQuestion('hoursPerWeek') + 1}`);
-
-    await page.getByRole('button', { name: '300 à 1 000 €' }).click();
-    await page.waitForURL(`**/onboarding?q=${indexOfQuestion('initialBudget') + 1}`);
-
-    const profile = await db.profile.findUniqueOrThrow({ where: { userId: user.id } });
-    expect(profile.hoursPerWeek).toBe(15);
-    expect(profile.hoursPerDay).toBe(3);
-    expect(profile.initialBudget).toBe(600);
-    expect(profile.monthlyBudget).toBe(50);
-
-    await page.goto('about:blank');
-    await cleanupUser(email);
-  });
-
-  test('un mineur de moins de 16 ans est refusé et son compte supprimé', async ({ page }) => {
-    const email = 'e2e-mineur@nexteo.test';
-    const user = await createAccount({ email });
-    await signIn(page, email);
-
-    await page.goto('/onboarding?q=0');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Quel âge as-tu');
-
-    // Tout se coche : aucun champ à saisir dans le tunnel.
-    await expect(page.locator('input[type="text"], input[type="number"]')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Moins de 16 ans' }).click();
-
-    await page.waitForURL('**/trop-jeune');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('16 ans');
-
-    const deleted = await db.user.findUnique({ where: { id: user.id } });
-    expect(deleted).toBeNull();
-  });
-
-  test('l’onboarding sauvegarde à chaque réponse et reprend où on s’est arrêté', async ({ page }) => {
-    const email = 'e2e-onboarding@nexteo.test';
-    const user = await createAccount({ email });
-    await signIn(page, email);
-
-    await page.goto('/onboarding?q=0');
-    // Un clic répond et enchaîne : pas de bouton « Continuer » à chercher.
-    await page.getByRole('button', { name: '25 à 34 ans' }).click();
-    await page.waitForURL('**/onboarding?q=1');
-
-    // Huit questions au total : le tunnel ne doit plus jamais s'allonger sans
-    // que ce soit une décision.
-    await expect(page.getByText('2 / 8')).toBeVisible();
-
-    const profile = await db.profile.findUniqueOrThrow({ where: { userId: user.id } });
-    expect(profile.age).toBe(29);
-    expect(profile.onboardingStep).toBe('age');
-
-    // Reprise : sans paramètre, on repart à la question suivante.
-    await page.goto('/onboarding');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('prêt à faire');
-
-    await page.goto('about:blank');
-    await cleanupUser(email);
+    await supprimerCompteDeTest(email);
   });
 });

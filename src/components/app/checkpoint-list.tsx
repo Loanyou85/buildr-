@@ -1,155 +1,145 @@
 'use client';
 
 import { useOptimistic, useState, useTransition } from 'react';
-import { motion, useReducedMotion } from 'motion/react';
 import { Button } from '@/components/ui/button';
-import { completeStep, toggleCheckpoint } from '@/server/actions/journey';
+import { Input } from '@/components/ui/input';
+import { basculerCritere, terminerEtape } from '@/server/actions/journey';
 import { cn } from '@/lib/utils';
 
-interface CheckpointRow {
+export interface CritereVue {
   id: string;
   label: string;
   isRequired: boolean;
+  proofKind: 'none' | 'url' | 'text';
+  coche: boolean;
+  preuve: string | null;
 }
 
 /**
- * Checklist de validation (section 8.6). Le bouton « J'ai terminé » n'est actif
- * que si tous les critères obligatoires sont cochés — et le serveur le
- * revérifie de toute façon.
+ * Checklist de validation (section 9.4). Le bouton « J'ai terminé » ne
+ * s'active que lorsque tous les critères obligatoires sont cochés.
  *
- * La case se remplit **immédiatement** au clic, sans attendre le serveur : une
- * validation qui met une seconde à réagir donne l'impression que rien ne s'est
- * passé. Si l'enregistrement échoue, la case revient en arrière et l'erreur est
- * affichée — un clic ne doit jamais rester sans réponse.
+ * La case affiche son état tout de suite, sans attendre le serveur : sur une
+ * connexion moyenne, un aller-retour avant la coche donne l'impression que le
+ * clic n'a pas marché.
  */
-export function CheckpointList({
-  stepId,
-  checkpoints,
-  checkedIds,
-  isDone,
-  error,
-}: {
-  stepId: string;
-  checkpoints: CheckpointRow[];
-  checkedIds: string[];
-  isDone: boolean;
-  error?: boolean;
-}) {
-  const reduced = useReducedMotion();
-  const [isPending, startTransition] = useTransition();
-  const [failure, setFailure] = useState<string | null>(null);
-
-  const [optimisticChecked, applyOptimistic] = useOptimistic(
-    checkedIds,
-    (current: string[], checkpointId: string) =>
-      current.includes(checkpointId)
-        ? current.filter((id) => id !== checkpointId)
-        : [...current, checkpointId],
+export function CheckpointList({ stepId, criteres }: { stepId: string; criteres: CritereVue[] }) {
+  const [etat, basculerOptimiste] = useOptimistic(criteres, (courant, id: string) =>
+    courant.map((c) => (c.id === id ? { ...c, coche: !c.coche } : c)),
+  );
+  const [, demarrer] = useTransition();
+  const [erreur, setErreur] = useState<string | null>(null);
+  const [preuves, setPreuves] = useState<Record<string, string>>(
+    Object.fromEntries(criteres.map((c) => [c.id, c.preuve ?? ''])),
   );
 
-  const checked = new Set(optimisticChecked);
-  const canComplete = checkpoints
-    .filter((checkpoint) => checkpoint.isRequired)
-    .every((checkpoint) => checked.has(checkpoint.id));
-
-  function toggle(checkpointId: string, wasChecked: boolean) {
-    if (isDone) return;
-    setFailure(null);
-
-    if (!wasChecked && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-      navigator.vibrate?.(10);
+  const basculer = (critere: CritereVue) => {
+    const preuve = preuves[critere.id] ?? '';
+    if (!critere.coche && critere.proofKind !== 'none' && preuve.trim().length === 0) {
+      setErreur('Colle d’abord ce qui est demandé juste au-dessus.');
+      return;
     }
+    setErreur(null);
 
-    startTransition(async () => {
-      applyOptimistic(checkpointId);
+    const data = new FormData();
+    data.set('stepId', stepId);
+    data.set('checkpointId', critere.id);
+    data.set('proof', preuve);
 
-      const formData = new FormData();
-      formData.set('stepId', stepId);
-      formData.set('checkpointId', checkpointId);
-
+    demarrer(async () => {
+      basculerOptimiste(critere.id);
       try {
-        await toggleCheckpoint(formData);
+        await basculerCritere(data);
       } catch {
-        // Cas le plus courant : la page a été ouverte avant un redéploiement,
-        // et le serveur ne reconnaît plus l'action. Recharger suffit.
-        setFailure(
-          'Cette validation n’a pas été enregistrée. Recharge la page (Ctrl + Maj + R, ou Cmd + Maj + R sur Mac) et réessaie.',
-        );
+        setErreur('L’enregistrement n’est pas passé. Recharge la page (Ctrl + Maj + R) et recommence.');
       }
     });
-  }
+  };
+
+  const restants = etat.filter((c) => c.isRequired && !c.coche).length;
 
   return (
-    <section className="mt-12 border-t border-beton-300 pt-8">
-      <h2 className="text-lg text-encre">Valider cette étape</h2>
-      <p className="mt-2 text-sm text-beton-600">
-        Coche ce que tu as réellement fait. Cette liste est la seule chose qui débloque la suite.
-      </p>
+    <section>
+      <h2 className="text-base font-bold text-white">Pour valider cette étape</h2>
+      <ul className="mt-4 space-y-2.5">
+        {etat.map((critere) => (
+          <li key={critere.id}>
+            {critere.proofKind !== 'none' && !critere.coche ? (
+              <div className="mb-2">
+                <Input
+                  value={preuves[critere.id] ?? ''}
+                  onChange={(event) => {
+                    // La valeur est lue tout de suite : React appelle la
+                    // fonction de mise à jour plus tard, quand l'événement a
+                    // déjà été vidé et que `currentTarget` vaut null.
+                    const valeur = event.currentTarget.value;
+                    setPreuves((p) => ({ ...p, [critere.id]: valeur }));
+                  }}
+                  placeholder={critere.proofKind === 'url' ? 'https://…' : 'Colle ici'}
+                  inputMode={critere.proofKind === 'url' ? 'url' : 'text'}
+                  aria-label={critere.label}
+                />
+              </div>
+            ) : null}
 
-      <ul className="mt-5 space-y-1">
-        {checkpoints.map((checkpoint) => {
-          const isChecked = checked.has(checkpoint.id);
-          return (
-            <li key={checkpoint.id}>
-              <button
-                type="button"
-                disabled={isDone}
-                onClick={() => toggle(checkpoint.id, isChecked)}
-                className="flex w-full items-start gap-3 rounded-xl px-2 py-2.5 text-left transition-colors hover:bg-beton-100 disabled:hover:bg-transparent"
-                aria-pressed={isChecked}
+            <button
+              type="button"
+              onClick={() => basculer(critere)}
+              aria-pressed={critere.coche}
+              className={cn(
+                'tactile flex w-full items-start gap-3 rounded-[--radius-card] border px-4 py-3 text-left transition-colors',
+                critere.coche ? 'border-neo-500/50 bg-neo-500/10' : 'border-gris-700 bg-nuit-800',
+              )}
+            >
+              <span
+                aria-hidden
+                className={cn(
+                  'mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-md border',
+                  critere.coche ? 'border-neo-500 bg-neo-500' : 'border-gris-700',
+                )}
               >
-                <motion.span
-                  initial={false}
-                  animate={{ scale: isChecked && !reduced ? [1, 1.12, 1] : 1 }}
-                  transition={{ duration: reduced ? 0 : 0.32, ease: [0.22, 1, 0.36, 1] }}
-                  className={cn(
-                    'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border text-xs',
-                    isChecked ? 'border-niveau bg-niveau text-white' : 'border-beton-300 bg-blanc',
-                  )}
-                  aria-hidden
-                >
-                  {isChecked ? '✓' : ''}
-                </motion.span>
-                <span className={cn('text-base', isChecked ? 'text-beton-600 line-through' : 'text-encre')}>
-                  {checkpoint.label}
-                  {!checkpoint.isRequired ? (
-                    <span className="ml-2 text-xs text-beton-600">facultatif</span>
-                  ) : null}
-                </span>
-              </button>
-            </li>
-          );
-        })}
+                {critere.coche ? (
+                  <svg viewBox="0 0 16 16" className="h-3 w-3" fill="none">
+                    <path
+                      d="M3 8.5l3.2 3.2L13 5"
+                      stroke="white"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : null}
+              </span>
+              <span className="text-sm text-white">
+                {critere.label}
+                {!critere.isRequired ? (
+                  <span className="ml-2 text-xs text-gris-300">(facultatif)</span>
+                ) : null}
+                {critere.coche && critere.preuve ? (
+                  <span className="mt-1 block break-all font-mono text-xs text-gris-300">
+                    {critere.preuve}
+                  </span>
+                ) : null}
+              </span>
+            </button>
+          </li>
+        ))}
       </ul>
 
-      {failure ? (
-        <p className="prose-nexteo mt-4 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
-          {failure}
+      {erreur ? (
+        <p role="alert" className="mt-3 text-sm text-red-400">
+          {erreur}
         </p>
       ) : null}
 
-      {error ? (
-        <p className="mt-4 text-sm text-encre">
-          Il reste des critères obligatoires à cocher. C’est ce qui garantit que l’étape suivante partira
-          sur des bases solides.
-        </p>
-      ) : null}
-
-      {isDone ? (
-        <p className="mt-6 text-sm text-niveau">Étape franchie. La suivante est ouverte.</p>
-      ) : (
-        <form action={completeStep} className="mt-6">
-          <input type="hidden" name="stepId" value={stepId} />
-          <Button type="submit" variant="signal" size="lg" disabled={!canComplete || isPending}>
-            J’ai terminé
-          </Button>
-          {!canComplete ? (
-            <p className="mt-2 text-sm text-beton-600">
-              Coche les critères obligatoires pour débloquer ce bouton.
-            </p>
-          ) : null}
-        </form>
-      )}
+      <form action={terminerEtape} className="mt-6">
+        <input type="hidden" name="stepId" value={stepId} />
+        <Button type="submit" taille="bloc" disabled={restants > 0}>
+          {restants > 0
+            ? `Encore ${restants} case${restants > 1 ? 's' : ''} à cocher`
+            : 'J’ai terminé cette étape'}
+        </Button>
+      </form>
     </section>
   );
 }

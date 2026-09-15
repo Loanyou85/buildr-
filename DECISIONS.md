@@ -1,183 +1,119 @@
 # Décisions
 
-Journal des arbitrages pris pendant la construction. Une ligne par décision, la raison
-compte plus que la décision.
-
-## Socle
-
-- **Next.js 15.5 / React 19 / TypeScript strict.** Stack imposée. `noUncheckedIndexedAccess`
-  activé en plus du strict : le moteur de scoring manipule des tableaux indexés, autant que
-  le compilateur le vérifie.
-- **Tailwind v4 avec `@theme`.** Les tokens de la section 4 sont des variables CSS, donc
-  réutilisables hors Tailwind (canvas de la carte de jalon, e-mails).
-- **Postgres local pour le développement.** Migrations et seed réellement appliquées, pas
-  seulement écrites.
-- **Prisma 6.** Prisma 7/8 changent la génération du client ; inutile de payer cette
-  migration maintenant.
+Les choix que le cahier des charges laissait ouverts, et pourquoi ils ont été
+tranchés comme ça.
 
 ## Produit
 
-- **Le variant `signal` du bouton est unique par écran.** Matérialisé par un seul composant
-  et vérifié par un test Playwright qui compte les occurrences sur les écrans d'app.
-- **`progressPercent` monotone.** Écrit via `Math.max(actuel, calculé)` dans une seule
-  fonction (`src/lib/journey/progress.ts`) — impossible de faire reculer la barre ailleurs.
-- **Le refus d'une recommandation demande une raison.** Après deux refus, on ne propose pas
-  une troisième alternative : on propose de reprendre les questions d'onboarding qui pèsent
-  le plus dans le score. Le système encourage l'exécution.
-- **L'IA ne score pas.** Elle normalise les réponses libres en signaux et rédige
-  l'explication. Sans clé API, le produit fonctionne : les signaux tombent en heuristique
-  locale et l'explication est générée depuis le `breakdown`. Le chemin ne dépend jamais d'un
-  appel réseau.
-- **Assistant contextuel sans clé API.** Il répond avec le contenu réel de l'étape
-  (sous-étapes, actions, templates) plutôt que rien. C'est cohérent avec le produit : tout
-  ce qu'il faut savoir est déjà dans le chemin.
-- **Jalons déclaratifs.** `declared` par défaut, `verified` impossible tant qu'aucune source
-  de paiement n'existe. Le type Prisma n'a que deux valeurs, donc rien d'autre ne peut être
-  écrit.
-- **Mineurs.** L'âge est demandé au premier écran d'onboarding. Sous 16 ans, aucune donnée
-  de profil n'est écrite et le compte est supprimé : le blocage est en base, pas en CSS.
-  De 16 à 18 ans, `Adventure.isPublic` est forcé à `false` côté serveur.
-- **Témoignages de la landing vides.** Le mur lit les aventures publiques réelles ; tant
-  qu'il n'y en a pas, il affiche un état vide qui invite à être le premier. Aucun faux avis.
+**Les trois offres sont Départ 7,99 €, Construction 18,99 € et Lancement
+35,99 €.** Les prix viennent du fondateur. Le découpage suit les trois
+promesses : Départ ouvre le parcours et le pack de prompts, Construction ajoute
+le générateur illimité et l'assistance, Lancement ajoute les trente scripts et
+le partage. L'offre gratuite n'est pas une quatrième carte : c'est ce que la
+personne a déjà, rappelé sous les offres. Au moment de décider, un quatrième
+choix n'aide personne.
 
-## Contenu
+**Le paywall est placé après la restitution des idées**, comme le demande la
+section 13. La personne a reçu trois idées et leur justification avant qu'on lui
+demande quoi que ce soit.
 
-- **Un parcours entièrement détaillé pour l'agence UGC** (budget 0 €, niveau débutant), six
-  phases, du jour 1 au premier client, avec scripts, templates et critères de validation
-  réels. Les autres business models ont un parcours d'amorçage ; la profondeur se démontre
-  sur un cas, pas sur quinze esquisses.
-- **Les variantes budget/niveau sont des lignes `Journey`,** pas des `if` dans le code.
+**Le diagnostic fait seize écrans.** Une question par écran, un seul geste par
+écran, et les choix uniques envoient le formulaire directement — pas de bouton
+« suivant » à chercher. Les seize tiennent en une dizaine de minutes, ce que la
+section 17 fixe comme objectif.
 
-## Déploiement
+**Les secteurs connus de l'intérieur arrivent en troisième question.** C'est la
+dimension la plus discriminante du moteur : la poser tard, c'est risquer de la
+poser à quelqu'un qui a déjà abandonné.
 
-- **L'URL du site est résolue par `src/lib/site.ts`, jamais lue directement.** Les plateformes
-  de déploiement exposent souvent une variable *définie mais vide* ; `??` ne rattrape que
-  `undefined`, donc `new URL(process.env.AUTH_URL ?? '…')` cassait le build au moment de
-  collecter les métadonnées. Le résolveur ignore les valeurs vides ou inanalysables, ajoute le
-  protocole quand la plateforme ne donne que l'hôte, et retombe sur `localhost`. Huit tests
-  couvrent ces cas, dont celui qui a réellement cassé.
-- **Les migrations tournent au déploiement**, dans le script `build`. Une base en retard sur le
-  code produit des pannes à l'exécution, difficiles à diagnostiquer ; un build qui échoue est
-  immédiat et lisible. `build:sans-migration` reste disponible pour les cas où la base n'est pas
-  joignable depuis l'environnement de build.
-- **`directUrl` dans le schéma Prisma.** En production, l'application passe par un pooler de
-  connexions — indispensable en serverless — mais un pooler ne sait pas exécuter des
-  migrations. Prisma a besoin des deux URL. Conséquence assumée : `DIRECT_URL` devient
-  obligatoire pour migrer, y compris en local, où elle vaut simplement `DATABASE_URL`.
-- **Une route d'initialisation protégée** (`POST /api/admin/initialiser`) rejoue le seed sans
-  terminal, parce qu'une base de production vide rend le produit inutilisable (aucun business
-  model à recommander) et que tout le monde n'a pas Node installé. Fermée par défaut : sans
-  `SEED_SECRET`, elle répond 503.
+## Moteur d'idées
 
-## Marque
+**Trente archétypes, pas une génération libre.** Un modèle qui invente une idée
+à chaque appel ne peut pas être classé de façon reproductible, et rien ne
+garantit que l'idée soit constructible avec le parcours. Le moteur classe des
+archétypes réels contre un profil ; le modèle ne fait que rédiger l'explication.
 
-- **Le logo est « les marches ».** Trois blocs qui montent en diagonale, de taille croissante,
-  le dernier en orange signal. Aucun ne partage de ligne de base : c'est ce qui le distingue
-  d'un graphique en barres, piste écartée pour cette raison. Une piste « escalier tracé » avait
-  plus de caractère à grande taille mais se désagrégeait à 16 px — le favicon a tranché.
-- **Deux variantes, pour une raison de fond.** Dans l'application, la marque est monochrome :
-  l'orange y signifie une seule chose, la prochaine action, et ne doit apparaître qu'une fois
-  par écran. Partout ailleurs — landing, connexion, favicon, carte de partage — la variante
-  colorée s'applique. Vérifié à l'écran : l'écran « Aujourd'hui » ne contient qu'un seul
-  élément orange, le bouton d'action.
+**`problemAccess` pèse 0,24, `noCodeFeasibility` seulement 0,12.** Le parcours
+existe précisément pour absorber la complexité de construction : un écran de
+plus ne doit pas disqualifier une idée que l'utilisateur est le seul à pouvoir
+vendre. Les poids vivent en base et se règlent sans déploiement.
 
-## Authentification
+**L'accès au problème se partage 55 / 45 entre le secteur connu et l'irritant
+cité.** Une première version donnait 80 / 20 au secteur : trois archétypes du
+même secteur devenaient interchangeables, et les six premiers résultats ne se
+départageaient plus que sur des détails. Ce qui a vraiment réglé le problème,
+ce n'est pas le poids, c'est d'avoir resserré les étiquettes : un archétype ne
+porte que les irritants qu'il fait réellement disparaître, pas tout ce qui est
+adjacent.
 
-- **E-mail et mot de passe, sans confirmation par e-mail.** Le lien magique ajoutait un
-  aller-retour dans la boîte de réception avant même d'avoir vu le produit, et rendait la
-  connexion dépendante de la délivrabilité d'un e-mail. L'inscription demande trois champs —
-  prénom, e-mail, mot de passe — et ouvre directement le diagnostic.
-- **Conséquence technique assumée : sessions signées (JWT) au lieu de sessions en base.** Un
-  fournisseur à identifiants ne peut pas s'appuyer sur l'adaptateur de base. L'adaptateur
-  Prisma reste en place pour Google. Les tests de bout en bout passent désormais par le vrai
-  formulaire de connexion, ce qui est une amélioration : plus de raccourci par cookie fabriqué.
-- **scrypt plutôt qu'une dépendance native.** Coûteux en mémoire, donc résistant aux attaques
-  parallélisées sur carte graphique, présent dans Node, et sans compilation à prévoir sur une
-  plateforme serverless. Les paramètres sont stockés dans l'empreinte pour pouvoir être durcis
-  sans invalider les comptes existants.
-- **Un seul message d'erreur pour la connexion.** « Adresse e-mail ou mot de passe incorrect » :
-  distinguer les deux cas revient à confirmer qu'une adresse existe.
-- **Le logo est « le cap »** : un escalier tracé d'un seul trait avec un carré posé au sommet,
-  la marche qui n'est pas encore franchie, seule à porter l'orange.
+**Les trois profils de démonstration sont testés, pas seulement décrits.** La
+section 15 dit que si les trois profils produisent des idées interchangeables,
+le moteur est raté. C'est devenu un test : les trois listes de trois idées
+doivent être disjointes, et l'idée de tête doit se détacher de la suivante.
 
-## Offres
+## Moteur de prompts
 
-- **Trois niveaux plutôt que deux.** Découverte (gratuit), Parcours (29 €/mois), Illimité
-  (59 €/mois). Le niveau supérieur repose sur des droits que le produit sait réellement
-  appliquer — plusieurs activités en parallèle, toutes les variantes de parcours, assistance
-  sans quota — et non sur des promesses invérifiables.
-- **Le paywall arrive après la recommandation**, pas avant. Placé plus tôt il convertirait
-  davantage, mais la landing promet un diagnostic gratuit et l'utilisateur paierait sans
-  savoir ce qu'il achète. Le parcours est instancié avant l'écran des offres : les trois
-  premières étapes restent accessibles quoi qu'il arrive.
-- **Aucun paiement n'est simulé.** Sans prestataire configuré, choisir une offre payante
-  enregistre l'intention (`Subscription.intendedPlan`) et le dit franchement : « aucun montant
-  ne t'a été débité ». Le point de branchement est isolé dans une seule fonction. Un test
-  vérifie que l'accès n'est pas accordé.
+**Le corps des quarante prompts est écrit à la main, en base.** Seules les
+variables propres à l'idée passent par le modèle, validées par Zod. Un prompt
+cassé casse le projet d'un utilisateur qui n'a aucun moyen de s'en rendre
+compte.
 
-## Écran d'analyse et paiement
+**Les prompts référencés par une étape ne sont pas stockés dans l'étape.**
+L'étape porte un slug de gabarit ; le moteur va chercher le prompt rempli dans
+le pack. Sinon le même prompt existerait en deux exemplaires, et l'un des deux
+finirait périmé.
 
-- **L'écran qui précède les offres affiche des chiffres, tous lus en base au rendu.** La
-  demande initiale était d'annoncer « 1 200 business créés » : c'est faux — aucun utilisateur
-  n'a encore créé d'activité —, c'est contraire au garde-fou n° 1, et placé juste avant un
-  paiement cela constitue une pratique commerciale trompeuse (art. L121-2 du code de la
-  consommation). L'effet recherché est obtenu avec des chiffres vrais : réponses analysées,
-  activités comparées, dimensions pesées, volume réel du parcours.
-- **Le compteur d'usage réel n'apparaît qu'au-delà de 50 parcours démarrés.** En dessous, il
-  ne dit rien d'utile, et l'arrondir à la hausse serait précisément ce qu'on refuse.
-- **Stripe : seul le webhook accorde un accès.** Une redirection de retour se falsifie, une
-  signature Stripe non. Un abonnement résilié ou impayé ramène au plan gratuit — l'accès suit
-  l'état réel du paiement, jamais l'intention. Le webhook renvoie 500 en cas d'erreur pour que
-  Stripe réessaie : mieux vaut une nouvelle tentative qu'un abonnement payé sans accès.
-- **Aucune interface de facturation réécrite.** Moyens de paiement, factures et résiliation
-  passent par le portail Stripe.
+**Vingt-sept motifs d'erreur pour quinze gabarits de réparation.** Plusieurs
+motifs partagent un gabarit — un module introuvable et un conflit de versions se
+réparent de la même façon. Ce qui compte, c'est de reconnaître le message que
+l'utilisateur colle.
 
-## Tunnel : retour visuel
+## Technique
 
-- **Les cases ne dépendent plus de JavaScript.** Elles étaient pilotées par un état React :
-  tant que le script n'avait pas chargé, un clic ne dessinait pas la coche — et s'annulait à
-  l'hydratation s'il avait été fait avant. Invisible en local, très visible sur une connexion
-  lente. L'apparence suit désormais la case native, en CSS. Un test parcourt le tunnel avec
-  JavaScript désactivé.
-- **La carte se marque au clic, avant la réponse du serveur.** Entre le clic et la question
-  suivante il y a un aller-retour ; sans retour visuel immédiat, on croit que rien n'a été
-  pris. Les autres cartes s'estompent, la choisie se remplit.
-- **Les questions à réponses multiples gardent un bouton.** Compétences, intérêts et habitudes
-  perdraient tout leur sens à n'accepter qu'une réponse — le moteur croise plusieurs
-  compétences. L'écran le dit explicitement plutôt que de laisser croire à un blocage.
-- **L'objectif de revenu se règle avec une barre**, de 0 à 50 000 €. Le champ reste non
-  contrôlé : il s'envoie même sans JavaScript, seul l'affichage du montant en dépend.
+**Le diagnostic anonyme est porté par un cookie, pas par une session.** Le
+profil existe sans utilisateur, avec un `anonId`, et il est rattaché au compte à
+l'inscription. Demander de créer un compte avant de répondre ferait perdre la
+moitié des visiteurs.
 
-## Garantie
+**Au rattachement, un profil déjà présent sur le compte l'emporte sur
+l'anonyme.** Écraser ce que la personne avait déjà répondu serait pire que de
+perdre un diagnostic qu'elle vient de refaire.
 
-- **Une garantie de remboursement porte sur le produit, jamais sur un revenu.** Le texte
-  dit ce qui se passe s'il n'y a pas de revenu ; il ne laisse à aucun moment entendre qu'il y
-  en aura un. Six tests passent l'intégralité du texte au garde-fou n° 2 et vérifient qu'aucune
-  formule de gain attendu n'y figure.
-- **Les conditions sont sur le même écran que la promesse.** Une garantie dont les conditions
-  attendent les mentions légales n'est pas une garantie, c'est un argument de vente. Qui,
-  à partir de quand, ce qu'on demande, ce qu'on ne demande pas, comment demander, sous quel
-  délai : un test échoue si l'une de ces réponses disparaît.
-- **Elle s'ajoute aux droits légaux**, mention obligatoire, vérifiée par un test.
-- **Aucun justificatif comptable n'est exigé.** Demander une preuve de non-revenu serait à la
-  fois invérifiable et vexant ; on demande en revanche d'avoir réellement suivi le parcours
-  jusqu'à la prospection, sans quoi il n'y a rien à juger.
+**Les cases à cocher n'ont aucun état React.** L'apparence est pilotée en CSS
+par l'état de la case native. Une version contrôlée ne dessinait la coche
+qu'après l'hydratation, et un clic avant celle-ci était annulé : la case se
+cochait puis se décochait toute seule.
 
-## Tunnel court et mobile
+**Les reveals au défilement sont écrits à la main avec un IntersectionObserver,
+pas avec une bibliothèque d'animation.** La landing tient un budget de 200 Ko de
+JavaScript ; la section 16 dit de choisir la vitesse contre la belle animation.
+Environ un kilooctet ici, contre plusieurs dizaines. La landing est à 116 Ko.
 
-- **Huit questions, choisies sur ce qu'elles décident.** Statut, ville et niveau d'études
-  n'entraient dans aucun calcul du moteur : ils sont partis sans rien coûter. Les sept champs
-  qui éliminent une activité — budget, temps, visage, contenu, vente, contact, terrain — sont
-  tous conservés, regroupés dans une seule question à cocher. Une case décochée vaut un refus
-  explicite, pas une absence de réponse.
-- **Deux champs se déduisent au lieu de coûter une question** : le temps quotidien découpe la
-  semaine sur cinq jours, le budget mensuel s'estime au dixième du budget de départ. Les
-  laisser vides pénaliserait systématiquement les activités à acquisition payante.
-- **Trois actions avant le paywall** : les questions, le diagnostic, la garantie. L'écran
-  d'analyse est devenu un bandeau en tête du diagnostic — le chiffre arrive au moment où il
-  sert, juste avant l'activité qu'il a servi à trouver, et c'est un écran de moins.
-- **Mobile d'abord, mesuré et non supposé.** Aucun débordement horizontal sur aucun écran ;
-  le titre de la landing passait sur trois lignes et repoussait le bouton hors du premier
-  écran, il tient maintenant sur deux ; plus aucune cible de moins de 40 px, sauf les liens à
-  l'intérieur d'un paragraphe, qu'on n'agrandit pas sans casser le texte. Les cartes
-  flottantes, coupées par le bord de l'écran, sont masquées sous 640 px.
+**Le seed tient dans une transaction ouverte par un verrou consultatif, avec des
+insertions par lots.** Sans le verrou, deux exécutions simultanées — un
+déploiement lent que l'utilisateur relance — violent une contrainte d'unicité.
+Sans les lots, plusieurs centaines de lignes dépassent le délai d'exécution.
+
+**La migration vers ce schéma nettoie les anciennes valeurs d'offre avant de
+changer l'énumération.** Sans ça, le transtypage échoue sur une base déjà semée
+avec les anciennes offres, et le déploiement s'arrête au milieu.
+
+**Le webhook Stripe reste le seul endroit qui ouvre un accès payant.** Une
+redirection de retour peut être fabriquée, une signature Stripe non.
+
+## Ce qui n'a pas été fait
+
+**Aucun faux chiffre sur la landing.** Les compteurs affichent le contenu du
+produit — phases, étapes, prompts, scripts — lu en base au rendu. Le mur
+d'aventures reste vide tant que personne n'a partagé, avec un état vide qui le
+dit franchement.
+
+**La capture Stripe n'est pas fabriquée.** `public/proof/placeholder.svg` dit
+qu'il s'agit d'un visuel à remplacer. Le composant détecte au rendu si le
+fondateur a déposé sa vraie capture. Une fausse capture crédible serait une
+pratique commerciale trompeuse.
+
+**Pas de Lenis.** Le défilement fluide était prévu pour la landing et désactivé
+sur mobile ; comme la quasi-totalité du trafic est mobile, il ne servait qu'au
+desktop pour un coût en JavaScript sur tout le monde. Le défilement natif reste
+meilleur sur téléphone.

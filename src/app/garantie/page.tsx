@@ -1,60 +1,55 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { auth } from '@/server/auth';
-import { CtaArrow } from '@/components/landing/cta-arrow';
+import { TopBar } from '@/components/shell/top-bar';
+import { Button } from '@/components/ui/button';
 import {
   GUARANTEE_CONDITIONS,
   GUARANTEE_DAYS,
   GUARANTEE_HEADLINE,
   GUARANTEE_LEGAL_NOTE,
   GUARANTEE_PROMISE,
+  SUPPORT_EMAIL,
 } from '@/lib/guarantee';
 
-export const dynamic = 'force-dynamic';
+export const metadata = { title: `La garantie ${GUARANTEE_DAYS} jours — Nexteo` };
 
-/**
- * La garantie, présentée juste avant les offres.
- *
- * Elle porte sur le produit et jamais sur un revenu : aucune phrase n'annonce
- * ni ne suggère un gain. Les conditions sont affichées en entier sur le même
- * écran que la promesse — une garantie dont les conditions attendent les
- * mentions légales n'est pas une garantie, c'est un argument de vente.
- */
-export default async function GuaranteePage() {
-  const session = await auth();
-  if (!session?.user?.id) redirect('/connexion');
-
+export default function GarantiePage() {
   return (
-    <div className="min-h-dvh bg-beton-100">
-      <main className="mx-auto max-w-2xl px-5 py-16">
-        <p className="text-sm text-beton-600">La garantie {GUARANTEE_DAYS} jours</p>
-        <h1 className="mt-3 text-3xl">{GUARANTEE_HEADLINE}</h1>
-        <p className="prose-nexteo mt-5 text-lg text-encre">{GUARANTEE_PROMISE}</p>
+    <>
+      <TopBar />
+      <main className="mx-auto max-w-md px-4 pb-16 pt-8">
+        <h1 className="text-xl font-extrabold text-white">{GUARANTEE_HEADLINE}</h1>
+        <p className="mt-3 text-sm text-gris-300">{GUARANTEE_PROMISE}</p>
 
-        <section className="mt-10 rounded-card border border-beton-300 bg-blanc">
-          <p className="border-b border-beton-300 px-6 py-4 text-sm font-medium text-encre">
-            Les conditions, en entier
-          </p>
-          <dl className="divide-y divide-beton-300">
-            {GUARANTEE_CONDITIONS.map((condition) => (
-              <div key={condition.title} className="px-6 py-4">
-                <dt className="text-sm font-medium text-encre">{condition.title}</dt>
-                <dd className="prose-nexteo mt-1 text-sm text-beton-600">{condition.detail}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
+        <p className="mt-4 text-sm text-gris-300">
+          Une garantie dont les conditions sont cachées se retourne contre celui qui l’annonce. Les
+          voici, en entier, avant que tu décides.
+        </p>
 
-        <p className="prose-nexteo mt-6 text-xs text-beton-600">{GUARANTEE_LEGAL_NOTE}</p>
+        <dl className="mt-8 space-y-5">
+          {GUARANTEE_CONDITIONS.map((condition) => (
+            <div key={condition.title} className="border-l-2 border-gris-700 pl-4">
+              <dt className="text-sm font-bold text-white">{condition.title}</dt>
+              <dd className="mt-1 text-sm text-gris-300">{condition.detail}</dd>
+            </div>
+          ))}
+        </dl>
 
-        <Link
-          href="/offres"
-          className="group mt-10 inline-flex h-13 items-center gap-2.5 rounded-xl bg-signal px-7 text-base font-medium text-white transition-colors hover:bg-[#f06f12]"
-        >
-          Voir les offres
-          <CtaArrow />
-        </Link>
+        <p className="mt-8 rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-4 text-xs text-gris-300">
+          {GUARANTEE_LEGAL_NOTE}
+        </p>
+
+        <p className="mt-4 text-xs text-gris-300">
+          Une question avant de t’abonner ? Écris à{' '}
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-neo-100 underline underline-offset-4">
+            {SUPPORT_EMAIL}
+          </a>
+          .
+        </p>
+
+        <Button asChild taille="bloc" className="mt-8">
+          <Link href="/offres">Revenir aux offres</Link>
+        </Button>
       </main>
-    </div>
+    </>
   );
 }

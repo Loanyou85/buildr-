@@ -1,94 +1,258 @@
 import Link from 'next/link';
 import { Logo } from '@/components/brand/logo';
-import { db } from '@/server/db';
-import { SmoothScroll } from '@/components/landing/smooth-scroll';
-import { Hero } from '@/components/landing/hero';
+import { Button } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Phone } from '@/components/landing/phone';
 import { Marquee } from '@/components/landing/marquee';
-import { Scrollytelling } from '@/components/landing/scrollytelling';
-import { Bento } from '@/components/landing/bento';
-import { Comparison } from '@/components/landing/comparison';
+import { Reveal } from '@/components/landing/reveal';
 import { Counters } from '@/components/landing/counters';
-import { TestimonialWall, type WallEntry } from '@/components/landing/testimonial-wall';
+import { Scrollytelling } from '@/components/landing/scrollytelling';
+import { Comparison } from '@/components/landing/comparison';
 import { Faq } from '@/components/landing/faq';
-import { FinalCta } from '@/components/landing/final-cta';
+import { db } from '@/server/db';
+import { GUARANTEE_DAYS } from '@/lib/guarantee';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Landing publique (section 8.1). Territoire spectaculaire : fond sombre,
- * glows, mockups flottants, mouvement. L'app, elle, reste sobre — les deux ne
- * se contaminent pas (section 4.4).
- */
-export default async function LandingPage() {
-  // Garde-fou n° 1 : le mur lit les aventures réelles. S'il n'y en a pas, il
-  // reste vide. Aucun témoignage n'est inventé pour remplir la page.
-  const adventures = await db.adventure.findMany({
-    where: { isPublic: true, story: { not: null } },
-    orderBy: { startedAt: 'desc' },
-    take: 12,
-    include: {
-      user: {
-        select: {
-          name: true,
-          userJourneys: {
-            take: 1,
-            orderBy: { startedAt: 'desc' },
-            include: { journey: { include: { businessModel: { select: { name: true } } } } },
-          },
-        },
-      },
-    },
-  });
+const PROMESSES = [
+  {
+    titre: 'Trouve ton idée',
+    texte:
+      'Un diagnostic qui part de ce que tu connais de l’intérieur. Trois idées, et pour chacune, les réponses qui l’ont produite.',
+    large: true,
+  },
+  {
+    titre: 'Construis-le sans coder',
+    texte: 'Treize phases, de la page blanche au paiement encaissé. Les prompts sont écrits pour toi.',
+  },
+  {
+    titre: 'Vends-le',
+    texte: 'Trente scripts de vidéos, un par jour, générés pour ton produit et ton public.',
+  },
+];
 
-  const entries: WallEntry[] = adventures.map((adventure) => ({
-    slug: adventure.slug,
-    name: adventure.user.name ?? 'Une aventure',
-    business: adventure.user.userJourneys[0]?.journey.businessModel.name ?? 'Parcours en cours',
-    excerpt: (adventure.story ?? '').slice(0, 220),
-  }));
+export default async function AccueilPage() {
+  // Garde-fou n° 3 : aucun chiffre inventé. Ceux-ci sont lus en base.
+  const [phases, etapes, prompts, aventures] = await Promise.all([
+    db.phase.count(),
+    db.step.count(),
+    db.promptTemplate.count({ where: { isRepair: false } }),
+    db.adventure.findMany({
+      where: { isPublic: true },
+      take: 6,
+      orderBy: { startedAt: 'desc' },
+      select: { slug: true, story: true, isDemo: true },
+    }),
+  ]);
 
   return (
-    <div className="bg-plan-900">
-      <SmoothScroll />
-
-      <header className="absolute inset-x-0 top-0 z-30">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <Logo className="text-white" />
-          <nav className="flex items-center gap-5">
-            <Link
-              href="/aventures"
-              className="hidden min-h-11 items-center px-2 text-sm text-white/60 transition-colors hover:text-white sm:inline-flex"
-            >
-              Les aventures
-            </Link>
-            <Link
-              href="/connexion"
-              className="inline-flex min-h-11 items-center rounded-xl border border-white/20 px-4 text-sm text-white transition-colors hover:border-acier hover:text-acier"
-            >
-              Se connecter
-            </Link>
-          </nav>
+    <>
+      <header
+        className="sticky top-0 z-40 border-b border-gris-700/60 bg-nuit-900/85 backdrop-blur"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+          <Logo />
+          {/* Section 2.2 : aucun menu sur mobile. Un logo, un bouton. */}
+          <Button asChild taille="sm" variant="secondaire">
+            <Link href="/diagnostic">Créer</Link>
+          </Button>
         </div>
       </header>
 
-      <Hero />
-      <Marquee />
-      <Scrollytelling />
-      <Bento />
-      <Counters />
-      <Comparison />
-      <TestimonialWall entries={entries} />
-      <Faq />
-      <FinalCta />
+      <main className="pb-28">
+        <section className="relative mx-auto max-w-5xl px-4 pt-8 md:pt-16">
+          <div aria-hidden className="halo-neo pointer-events-none absolute left-1/2 top-0 -z-10 h-[min(520px,100vw)] w-[min(520px,100vw)] -translate-x-1/2" />
 
-      <footer className="border-t border-white/10 bg-plan-900 py-10 text-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5">
-          <Logo className="text-white/70" markClassName="size-5" wordClassName="text-sm" />
-          <p className="text-xs text-white/40">
-            Nexteo n’est pas une promesse de revenu. C’est un parcours d’exécution.
+          <div className="md:grid md:grid-cols-2 md:items-center md:gap-12">
+            <div>
+              <p className="lever inline-flex rounded-full border border-neo-500/30 bg-neo-500/10 px-4 py-1.5 text-xs text-neo-100" style={{ ['--rang' as string]: 0 }}>
+                Sans coder · 7 jours
+              </p>
+
+              <h1
+                className="lever mt-6 font-display text-[44px] font-extrabold leading-[1.02] tracking-[-0.03em] text-white md:text-[64px]"
+                style={{ ['--rang' as string]: 1 }}
+              >
+                Crée ton SaaS de A à Z, étape par étape.
+              </h1>
+
+              <p className="lever mt-5 text-sm text-gris-300 md:text-base" style={{ ['--rang' as string]: 2 }}>
+                Trouve ton idée, mets ton site en ligne, encaisse tes premiers paiements.
+              </p>
+
+              <div className="lever mt-7" style={{ ['--rang' as string]: 3 }}>
+                <Button asChild taille="lg" className="w-full md:w-auto">
+                  <Link href="/diagnostic">
+                    Trouver mon idée
+                    <span aria-hidden>→</span>
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="lever mt-12 md:mt-0" style={{ ['--rang' as string]: 4 }}>
+              <Phone />
+            </div>
+          </div>
+
+          <p className="mt-10 text-center text-xs text-gris-300">
+            Sans code · Sans équipe · Sans budget de départ
           </p>
+        </section>
+
+        <div className="mt-12">
+          <Marquee />
         </div>
-      </footer>
-    </div>
+
+        <section className="mx-auto mt-16 max-w-5xl px-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            {PROMESSES.map((promesse, index) => (
+              <Reveal key={promesse.titre} delay={index * 60} className={promesse.large ? 'md:col-span-2' : ''}>
+                <article
+                  className={`h-full rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-6 ${
+                    promesse.large ? 'md:p-8' : ''
+                  }`}
+                >
+                  <h2 className={`font-extrabold text-white ${promesse.large ? 'text-xl' : 'text-lg'}`}>
+                    {promesse.titre}
+                  </h2>
+                  <p className="mt-2 text-sm text-gris-300">{promesse.texte}</p>
+                </article>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        <section className="mx-auto mt-24 max-w-5xl px-4">
+          <h2 className="text-xl font-extrabold text-white md:text-2xl">Ce que tu obtiens, dans l’ordre.</h2>
+          <div className="mt-10">
+            <Scrollytelling />
+          </div>
+        </section>
+
+        <section className="mx-auto mt-24 max-w-5xl px-4">
+          <h2 className="text-xl font-extrabold text-white md:text-2xl">Ce qu’il y a dedans.</h2>
+          <p className="mt-2 text-sm text-gris-300">
+            Des chiffres sur le produit, pas sur ses utilisateurs.
+          </p>
+          <div className="mt-6">
+            <Counters
+              items={[
+                { value: phases, label: 'phases' },
+                { value: etapes, label: 'étapes détaillées' },
+                { value: prompts, label: 'prompts dans le pack' },
+                { value: 30, label: 'scripts vidéo' },
+              ]}
+            />
+          </div>
+        </section>
+
+        <section className="mx-auto mt-24 max-w-5xl px-4">
+          <h2 className="text-xl font-extrabold text-white md:text-2xl">Avec, ou sans.</h2>
+          <div className="mt-6">
+            <Comparison />
+          </div>
+        </section>
+
+        <section className="mx-auto mt-24 max-w-5xl px-4">
+          <h2 className="text-xl font-extrabold text-white md:text-2xl">Les aventures</h2>
+          {aventures.length === 0 ? (
+            <EmptyState
+              className="mt-6"
+              title="Personne n’a encore partagé la sienne."
+              description="On n’invente pas de témoignages pour remplir. Cette section restera vide jusqu’à ce que quelqu’un partage son parcours — ce sera peut-être toi."
+              action={
+                <Button asChild variant="secondaire">
+                  <Link href="/diagnostic">Commencer la mienne</Link>
+                </Button>
+              }
+            />
+          ) : (
+            <ul className="mt-6 grid gap-4 md:grid-cols-2">
+              {aventures.map((aventure) => (
+                <li key={aventure.slug} className="rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-5">
+                  {aventure.isDemo ? (
+                    <span className="mb-2 inline-block rounded-full border border-gris-700 px-3 py-1 text-xs text-gris-300">
+                      Exemple
+                    </span>
+                  ) : null}
+                  <p className="text-sm text-gris-300">{aventure.story}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="mx-auto mt-24 max-w-3xl px-4">
+          <h2 className="text-xl font-extrabold text-white md:text-2xl">Les questions qu’on nous pose.</h2>
+          <div className="mt-6">
+            <Faq />
+          </div>
+        </section>
+
+        <section className="relative mx-auto mt-24 max-w-3xl px-4 text-center">
+          <div aria-hidden className="halo-neo pointer-events-none absolute left-1/2 top-0 -z-10 h-[min(420px,100vw)] w-[min(420px,100vw)] -translate-x-1/2" />
+          <h2 className="font-display text-2xl font-extrabold leading-tight text-white">
+            Dans dix minutes, tu auras une idée qui te ressemble.
+          </h2>
+          <p className="mt-3 text-sm text-gris-300">
+            Le diagnostic est gratuit et ne demande aucune inscription.
+          </p>
+          <Button asChild taille="lg" className="mt-7 w-full md:w-auto">
+            <Link href="/diagnostic">
+              Trouver mon idée
+              <span aria-hidden>→</span>
+            </Link>
+          </Button>
+          <ul className="mt-6 flex flex-wrap justify-center gap-2 text-xs text-gris-300">
+            <li className="rounded-full border border-gris-700 px-3 py-1.5">Sans inscription</li>
+            <li className="rounded-full border border-gris-700 px-3 py-1.5">Sans carte bancaire</li>
+            <li className="rounded-full border border-gris-700 px-3 py-1.5">
+              Garantie {GUARANTEE_DAYS} jours
+            </li>
+          </ul>
+        </section>
+
+        <footer className="mx-auto mt-24 max-w-5xl border-t border-gris-700/60 px-4 py-10">
+          <Logo />
+          {/* Section 2.2 : 48 px de zone tactile, y compris dans le pied de page. */}
+          <nav className="mt-4 flex flex-wrap gap-x-6 text-xs text-gris-300">
+            {[
+              { href: '/garantie', label: 'La garantie' },
+              { href: '/legal/mentions', label: 'Mentions légales' },
+              { href: '/legal/cgv', label: 'Conditions de vente' },
+              { href: '/legal/confidentialite', label: 'Confidentialité' },
+              { href: '/connexion', label: 'Me connecter' },
+            ].map((lien) => (
+              <Link
+                key={lien.href}
+                href={lien.href}
+                className="tactile inline-flex items-center underline underline-offset-4"
+              >
+                {lien.label}
+              </Link>
+            ))}
+          </nav>
+          <p className="mt-6 text-xs text-gris-300">
+            Nexteo ne promet aucun revenu. Ce que tu obtiendras dépend de ton idée, de ton marché et
+            du travail que tu y mets.
+          </p>
+        </footer>
+      </main>
+
+      {/* Barre d'action collée en bas (section 2.2), toujours visible. */}
+      <div
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-gris-700/60 bg-nuit-900/95 px-4 pt-3 backdrop-blur md:hidden"
+        style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+      >
+        <Button asChild taille="bloc">
+          <Link href="/diagnostic">
+            Trouver mon idée
+            <span aria-hidden>→</span>
+          </Link>
+        </Button>
+      </div>
+    </>
   );
 }

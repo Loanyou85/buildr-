@@ -1,84 +1,64 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { db } from '@/server/db';
 import { requireUser, signOut } from '@/server/auth';
 
 /**
- * RGPD (garde-fou n° 4) : export et suppression fonctionnels dès le MVP.
- * L'export contient tout ce qui a été collecté, pas un résumé.
+ * Export et suppression (garde-fou n° 5). Ces deux fonctions ne sont pas
+ * optionnelles : le règlement européen les impose, et la suppression doit
+ * effacer réellement, pas masquer.
  */
-export async function exportMyData(): Promise<string> {
-  const user = await requireUser();
-
-  const data = await db.user.findUnique({
-    where: { id: user.id },
-    include: {
-      profile: {
-        include: {
-          skills: { include: { skill: true } },
-          interests: { include: { interest: true } },
-          habits: true,
-        },
+export async function exporterDonnees(userId: string) {
+  const [user, profile, idees, parcours, scripts, packs] = await Promise.all([
+    db.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: {
+        email: true,
+        name: true,
+        createdAt: true,
+        consentAcceptedAt: true,
+        consentVersion: true,
+        dataRetentionMonths: true,
       },
-      recommendations: { include: { businessModel: { select: { slug: true, name: true } } } },
-      userJourneys: {
-        include: {
-          journey: { select: { name: true, budgetTier: true, experienceTier: true } },
-          steps: { include: { checkpoints: true } },
-          adjustments: true,
-          dailyPlans: true,
-        },
+    }),
+    db.profile.findUnique({
+      where: { userId },
+      include: {
+        skills: { include: { skill: true } },
+        domains: { include: { domain: true } },
+        interests: { include: { interest: true } },
+        frictions: true,
       },
-      milestones: { include: { milestone: true } },
-      adventures: { include: { shares: true } },
-      notifications: true,
-      notificationPref: true,
-      assistantThreads: { include: { messages: true } },
-      subscription: true,
-      accounts: { select: { provider: true, type: true } },
-    },
-  });
+    }),
+    db.idea.findMany({ where: { userId }, include: { sources: true } }),
+    db.userJourney.findMany({
+      where: { userId },
+      include: { steps: { include: { checkpoints: true } }, projectState: true },
+    }),
+    db.videoScript.findMany({ where: { userId } }),
+    db.promptPack.findMany({ where: { userId }, include: { prompts: true } }),
+  ]);
 
-  return JSON.stringify(
-    {
-      exportedAt: new Date().toISOString(),
-      note: 'Export intégral de tes données Nexteo, conformément à ton droit d’accès et de portabilité.',
-      data,
-    },
-    null,
-    2,
-  );
+  return {
+    exporteLe: new Date().toISOString(),
+    compte: user,
+    profil: profile,
+    idees,
+    parcours,
+    scriptsVideo: scripts,
+    packsDePrompts: packs,
+  };
 }
 
-/** Suppression définitive. Les relations sont en cascade : rien ne survit. */
-export async function deleteMyAccount(formData: FormData): Promise<void> {
+export async function supprimerCompte(formData: FormData): Promise<void> {
   const user = await requireUser();
-  const confirmation = String(formData.get('confirmation') ?? '').trim().toLowerCase();
-
-  if (confirmation !== 'supprimer') {
-    redirect('/app/compte?erreur=confirmation');
+  if (String(formData.get('confirmation') ?? '').trim().toUpperCase() !== 'SUPPRIMER') {
+    redirect('/app/compte?confirmation=manquante');
   }
 
+  // Les suppressions en cascade du schéma emportent profil, idées, parcours,
+  // prompts, scripts et abonnement.
   await db.user.delete({ where: { id: user.id } });
   await signOut({ redirectTo: '/' });
-}
-
-export async function updateNotificationPrefs(formData: FormData): Promise<void> {
-  const user = await requireUser();
-  const hour = Number(formData.get('reminderHour') ?? 9);
-
-  await db.notificationPref.upsert({
-    where: { userId: user.id },
-    update: {
-      dailyReminder: formData.get('dailyReminder') === 'on',
-      inactivityReminder: formData.get('inactivityReminder') === 'on',
-      reminderHour: Number.isFinite(hour) ? Math.max(0, Math.min(23, Math.round(hour))) : 9,
-      channel: (String(formData.get('channel') ?? 'email') as 'email' | 'browser' | 'both'),
-    },
-    create: { userId: user.id },
-  });
-
-  revalidatePath('/app/compte');
 }

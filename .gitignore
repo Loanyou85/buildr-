@@ -11,3 +11,8 @@ coverage
 playwright-report
 test-results
 .vercel
+
+# Captures d'écran et artefacts de test
+/captures
+/test-results
+/playwright-report

@@ -1,168 +1,179 @@
-import { StepStatus, type Prisma } from '@prisma/client';
+import 'server-only';
+import type { StepStatus, TechPath } from '@prisma/client';
 import { db } from '@/server/db';
-import { budgetTierFor, experienceTierFor, fallbackOrder } from '@/lib/journey/instantiate';
-import { computeProgressPercent } from '@/lib/journey/progress';
-import { isUnlocked, parseUnlockConditions } from '@/lib/journey/unlock';
 
 /**
- * Crée l'instance de parcours d'un utilisateur : un `StepProgress` par étape,
- * la première disponible, les autres verrouillées mais visibles (section 8.5).
+ * Instance de parcours et progression (sections 9 et 2.3).
+ *
+ * Deux règles tiennent tout le reste :
+ *   - la progression ne recule jamais ;
+ *   - une étape propre à un chemin technique n'existe pas pour l'autre, mais
+ *     sa ligne de progression est créée quand même, pour qu'un changement de
+ *     chemin n'efface rien.
  */
-export async function instantiateJourney(userId: string, businessModelId: string) {
-  const profile = await db.profile.findUnique({
-    where: { userId },
-    include: { skills: true },
-  });
 
-  const budgetTier = budgetTierFor(profile?.initialBudget ?? 0);
-  const experienceTier = experienceTierFor(profile?.skills.map((s) => s.level) ?? []);
+export async function parcoursActif() {
+  return db.journey.findFirst({ where: { isActive: true }, orderBy: { version: 'desc' } });
+}
 
-  const journeys = await db.journey.findMany({
-    where: { businessModelId, isActive: true },
-    include: { phases: { include: { steps: { orderBy: { order: 'asc' } } }, orderBy: { order: 'asc' } } },
-    orderBy: { version: 'desc' },
-  });
+/** Démarre le parcours d'un utilisateur sur l'idée qu'il vient de choisir. */
+export async function demarrerParcours(userId: string, ideaId: string) {
+  const journey = await parcoursActif();
+  if (!journey) throw new Error('Aucun parcours actif en base.');
 
-  if (journeys.length === 0) return null;
-
-  const journey =
-    fallbackOrder(budgetTier, experienceTier)
-      .map((combo) => journeys.find((j) => j.budgetTier === combo.budgetTier && j.experienceTier === combo.experienceTier))
-      .find(Boolean) ?? journeys[0]!;
-
-  const steps = journey.phases.flatMap((phase) => phase.steps);
-  if (steps.length === 0) return null;
-
-  const existing = await db.userJourney.findUnique({
+  const existant = await db.userJourney.findUnique({
     where: { userId_journeyId: { userId, journeyId: journey.id } },
   });
-  if (existing) return existing;
+  if (existant) {
+    // Changer d'idée ne réinitialise pas la progression : les premières phases
+    // valent pour n'importe quelle idée.
+    if (existant.ideaId !== ideaId) {
+      await db.userJourney.update({ where: { id: existant.id }, data: { ideaId } });
+    }
+    return existant;
+  }
 
-  const firstStep = steps.reduce((min, step) => (step.number < min.number ? step : min), steps[0]!);
+  const steps = await db.step.findMany({
+    where: { phase: { journeyId: journey.id } },
+    orderBy: { number: 'asc' },
+    select: { id: true, number: true, techPath: true },
+  });
 
-  return db.userJourney.create({
+  const profile = await db.profile.findUnique({ where: { userId }, select: { technicalLevel: true } });
+  // Section 9.2 : le chemin navigateur par défaut en dessous du niveau 2.
+  const techPath: TechPath = (profile?.technicalLevel ?? 0) >= 2 ? 'ordinateur' : 'navigateur';
+
+  const applicables = steps.filter((s) => s.techPath === null || s.techPath === techPath);
+  const premier = applicables[0];
+
+  const userJourney = await db.userJourney.create({
     data: {
       userId,
       journeyId: journey.id,
-      currentStepId: firstStep.id,
-      progressPercent: 0,
+      ideaId,
+      techPath,
+      currentStepId: premier?.id ?? null,
       steps: {
         create: steps.map((step) => ({
           stepId: step.id,
-          status: step.id === firstStep.id ? StepStatus.available : StepStatus.locked,
+          status: (step.id === premier?.id ? 'available' : 'locked') as StepStatus,
         })),
       },
+      projectState: { create: {} },
     },
   });
+
+  await db.userMilestone.upsert({
+    where: {
+      userId_milestoneId: {
+        userId,
+        milestoneId: (await db.milestone.findUniqueOrThrow({ where: { key: 'idee-choisie' } })).id,
+      },
+    },
+    create: {
+      userId,
+      milestoneId: (await db.milestone.findUniqueOrThrow({ where: { key: 'idee-choisie' } })).id,
+    },
+    update: {},
+  });
+
+  return userJourney;
 }
 
-export type UserJourneyWithContent = Prisma.UserJourneyGetPayload<{
-  include: {
-    journey: {
-      include: {
-        businessModel: true;
-        phases: { include: { steps: { include: { checkpoints: true } } } };
-      };
-    };
-    steps: { include: { checkpoints: true } };
-  };
-}>;
-
-export async function loadUserJourney(userId: string): Promise<UserJourneyWithContent | null> {
+export async function parcoursDe(userId: string) {
   return db.userJourney.findFirst({
     where: { userId },
     orderBy: { startedAt: 'desc' },
     include: {
+      idea: true,
+      projectState: true,
       journey: {
         include: {
-          businessModel: true,
           phases: {
             orderBy: { order: 'asc' },
-            include: { steps: { orderBy: { order: 'asc' }, include: { checkpoints: { orderBy: { order: 'asc' } } } } },
+            include: { steps: { orderBy: { order: 'asc' } } },
           },
         },
       },
-      steps: { include: { checkpoints: true } },
+      steps: true,
     },
   });
 }
 
+export type ParcoursComplet = NonNullable<Awaited<ReturnType<typeof parcoursDe>>>;
+
+/** Les étapes du chemin technique retenu, dans l'ordre. */
+export function etapesApplicables(parcours: ParcoursComplet) {
+  return parcours.journey.phases
+    .flatMap((phase) => phase.steps.map((step) => ({ ...step, phase })))
+    .filter((step) => step.techPath === null || step.techPath === parcours.techPath)
+    .sort((a, b) => a.number - b.number);
+}
+
+export function progressionDe(parcours: ParcoursComplet): number {
+  const applicables = etapesApplicables(parcours);
+  if (applicables.length === 0) return 0;
+  const parId = new Map(parcours.steps.map((s) => [s.stepId, s.status]));
+  const faites = applicables.filter((s) => parId.get(s.id) === 'done').length;
+  return Math.round((faites / applicables.length) * 100);
+}
+
 /**
- * Recalcule les statuts de toutes les étapes et la progression globale.
- * Appelée après chaque validation. C'est le seul endroit qui écrit
- * `progressPercent` : la barre ne peut pas reculer ailleurs.
+ * Recalcule les déverrouillages après une validation. Une étape devient
+ * disponible dès que celle qui la précède est faite — et une étape déjà
+ * disponible ne se referme jamais.
  */
-export async function refreshJourneyState(userJourneyId: string): Promise<void> {
-  const userJourney = await db.userJourney.findUnique({
+export async function recalculerDeverrouillage(userJourneyId: string): Promise<void> {
+  const parcours = await db.userJourney.findUniqueOrThrow({
     where: { id: userJourneyId },
     include: {
-      journey: {
-        include: {
-          phases: {
-            orderBy: { order: 'asc' },
-            include: { steps: { orderBy: { order: 'asc' }, include: { checkpoints: true } } },
-          },
-        },
-      },
-      steps: { include: { checkpoints: true } },
+      idea: true,
+      projectState: true,
+      journey: { include: { phases: { orderBy: { order: 'asc' }, include: { steps: { orderBy: { order: 'asc' } } } } } },
+      steps: true,
     },
   });
-  if (!userJourney) return;
 
-  const steps = userJourney.journey.phases.flatMap((phase) => phase.steps);
-  const progressByStepId = new Map(userJourney.steps.map((p) => [p.stepId, p]));
+  const applicables = etapesApplicables(parcours);
+  const parId = new Map(parcours.steps.map((s) => [s.stepId, s]));
 
-  const completedNumbers = steps
-    .filter((step) => progressByStepId.get(step.id)?.status === StepStatus.done)
-    .map((step) => step.number);
-  const checkedCheckpointIds = userJourney.steps.flatMap((p) => p.checkpoints.map((c) => c.checkpointId));
+  let precedenteFaite = true;
+  let courante: string | null = null;
 
-  const updates: Prisma.PrismaPromise<unknown>[] = [];
-  for (const step of steps) {
-    const progress = progressByStepId.get(step.id);
-    if (!progress || progress.status === StepStatus.done || progress.status === StepStatus.in_progress) continue;
+  for (const step of applicables) {
+    const progres = parId.get(step.id);
+    if (!progres) continue;
 
-    const unlocked = isUnlocked({
-      stepNumber: step.number,
-      conditions: parseUnlockConditions(step.unlockConditions),
-      completedStepNumbers: completedNumbers,
-      checkedCheckpointIds,
-    });
-    const target = unlocked ? StepStatus.available : StepStatus.locked;
-    if (progress.status !== target) {
-      updates.push(db.stepProgress.update({ where: { id: progress.id }, data: { status: target } }));
+    if (progres.status === 'done') {
+      precedenteFaite = true;
+      continue;
+    }
+
+    if (precedenteFaite) {
+      if (progres.status === 'locked') {
+        await db.stepProgress.update({ where: { id: progres.id }, data: { status: 'available' } });
+      }
+      courante ??= step.id;
+      precedenteFaite = false;
     }
   }
 
-  // Étape courante : la première non terminée dans l'ordre du parcours.
-  const ordered = [...steps].sort((a, b) => a.number - b.number);
-  const current = ordered.find((step) => progressByStepId.get(step.id)?.status !== StepStatus.done);
-
-  const currentProgress = current ? progressByStepId.get(current.id) : undefined;
-  const currentRequired = current?.checkpoints.filter((c) => c.isRequired).length ?? 0;
-  const currentChecked = currentProgress
-    ? currentProgress.checkpoints.filter((cp) =>
-        current?.checkpoints.some((c) => c.id === cp.checkpointId && c.isRequired),
-      ).length
-    : 0;
-
-  const progressPercent = computeProgressPercent({
-    totalSteps: steps.length,
-    completedSteps: completedNumbers.length,
-    currentStepCheckedRatio: currentRequired > 0 ? currentChecked / currentRequired : 0,
-    previousPercent: userJourney.progressPercent,
+  const percent = progressionDe(parcours);
+  await db.userJourney.update({
+    where: { id: userJourneyId },
+    data: {
+      currentStepId: courante,
+      // Ne recule jamais (section 2.3).
+      progressPercent: Math.max(parcours.progressPercent, percent),
+      completedAt: percent >= 100 ? (parcours.completedAt ?? new Date()) : parcours.completedAt,
+    },
   });
+}
 
-  updates.push(
-    db.userJourney.update({
-      where: { id: userJourney.id },
-      data: {
-        currentStepId: current?.id ?? userJourney.currentStepId,
-        progressPercent,
-        completedAt: completedNumbers.length === steps.length ? (userJourney.completedAt ?? new Date()) : null,
-      },
-    }),
-  );
-
-  await db.$transaction(updates);
+/** Numéro de phase d'une étape, pour le gating de l'offre gratuite. */
+export function phaseDeLEtape(parcours: ParcoursComplet, stepId: string): number {
+  for (const phase of parcours.journey.phases) {
+    if (phase.steps.some((s) => s.id === stepId)) return phase.order;
+  }
+  return 1;
 }

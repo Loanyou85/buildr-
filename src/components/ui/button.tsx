@@ -1,32 +1,33 @@
-import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
-/*
- * Le variant `signal` matérialise la prochaine action. Il n'apparaît
- * qu'une seule fois par écran d'application (section 4.1).
+/**
+ * Section 2.1 : un seul bouton principal par écran. La variante `principal`
+ * est en `--neo-500` et ne doit apparaître qu'une fois.
+ *
+ * Section 2.2 : 48 px de haut minimum, partout, sans exception.
  */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 disabled:pointer-events-none disabled:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0 active:scale-[0.99]',
+  'inline-flex items-center justify-center gap-2 rounded-[--radius-bouton] font-medium transition-[transform,background-color,border-color] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neo-400',
   {
     variants: {
       variant: {
-        signal: 'bg-signal text-white shadow-[0_1px_2px_rgba(16,24,40,0.08)] hover:bg-[#f06f12]',
-        primary: 'bg-encre text-white hover:bg-[#1d2939]',
-        acier: 'bg-acier text-white hover:bg-[#2f6bea]',
-        outline: 'border border-beton-300 bg-blanc text-encre hover:border-acier hover:text-acier',
-        ghost: 'text-beton-600 hover:bg-beton-100 hover:text-encre',
-        link: 'text-acier underline-offset-4 hover:underline',
+        principal: 'bg-neo-500 text-white hover:bg-neo-400',
+        secondaire: 'border border-gris-700 bg-nuit-800 text-white hover:border-neo-500/30',
+        fantome: 'text-gris-300 hover:text-white',
+        danger: 'border border-gris-700 bg-nuit-800 text-white hover:border-red-500/40',
       },
-      size: {
-        sm: 'h-10 px-3.5 text-sm',
-        md: 'h-11 px-5 text-sm',
-        lg: 'h-13 px-7 text-base',
-        icon: 'size-10',
+      taille: {
+        // 48 px partout, sans exception (section 2.2) — y compris sur les
+        // boutons discrets : c'est une règle de zone tactile, pas de style.
+        sm: 'min-h-[48px] px-4 text-xs',
+        md: 'min-h-[48px] px-5 text-sm',
+        lg: 'min-h-[56px] px-6 text-base',
+        bloc: 'min-h-[56px] w-full px-6 text-base',
       },
     },
-    defaultVariants: { variant: 'primary', size: 'md' },
+    defaultVariants: { variant: 'principal', taille: 'md' },
   },
 );
 
@@ -34,11 +35,13 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  /** React 19 : `ref` est une prop ordinaire, il suffit de la déclarer. */
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
-export function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {
+export function Button({ className, variant, taille, asChild = false, ...props }: ButtonProps) {
   const Comp = asChild ? Slot : 'button';
-  return <Comp className={cn(buttonVariants({ variant, size }), className)} {...props} />;
+  return <Comp className={cn(buttonVariants({ variant, taille }), className)} {...props} />;
 }
 
 export { buttonVariants };

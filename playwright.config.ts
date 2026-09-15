@@ -24,6 +24,9 @@ export default defineConfig({
   ],
   webServer: {
     command: 'npx next start -p 3100 -H 127.0.0.1',
+    // Sans clé, les explications et les scripts basculent sur leur version
+    // déterministe : les tests ne dépendent pas d'un appel réseau.
+    env: { ANTHROPIC_API_KEY: '', STRIPE_SECRET_KEY: '' },
     url: 'http://127.0.0.1:3100',
     reuseExistingServer: true,
     timeout: 120_000,

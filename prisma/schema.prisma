@@ -1,7 +1,10 @@
-// Nexteo — schéma de données (section 6 du cahier des charges).
-// Règle structurante : les parcours ne sont jamais codés en dur dans le
-// front-end. Ajouter un business model ou un parcours est une insertion en
-// base, jamais une modification de code.
+// Nexteo — schéma de données (section 7 du prompt maître).
+//
+// Deux règles structurantes :
+//   1. Aucun contenu de parcours n'est codé en dur dans le front-end.
+//      Tout — phases, étapes, actions, prompts, erreurs connues — vient d'ici.
+//   2. Les poids du moteur d'idées vivent en base (table ScoringWeight),
+//      jamais dans le code : les régler ne demande pas un déploiement.
 
 generator client {
   provider = "prisma-client-js"
@@ -12,13 +15,12 @@ datasource db {
   // Connexion applicative : passe par le pooler de l'hébergeur en production.
   url       = env("DATABASE_URL")
   // Connexion directe, utilisée uniquement par les migrations : un pooler ne
-  // sait pas exécuter les instructions de migration. En développement local,
-  // laisse DIRECT_URL identique à DATABASE_URL.
+  // sait pas exécuter les instructions de migration. En local, identique.
   directUrl = env("DIRECT_URL")
 }
 
 // ---------------------------------------------------------------------------
-// 6.1 — Compte et profil
+// 7.1 — Compte
 // ---------------------------------------------------------------------------
 
 enum Role {
@@ -31,14 +33,14 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   name          String?
-  /// Empreinte scrypt du mot de passe. Absente pour un compte créé via Google.
+  /// Empreinte scrypt. Absente pour un compte créé via Google.
   passwordHash  String?
   image         String?
   role          Role      @default(user)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  // RGPD : consentement explicite recueilli à l'inscription (garde-fou n° 4).
+  // Garde-fou n° 5 (RGPD) : consentement explicite, conservation documentée.
   consentAcceptedAt   DateTime?
   consentVersion      String?
   dataRetentionMonths Int       @default(36)
@@ -46,13 +48,15 @@ model User {
   accounts         Account[]
   sessions         Session[]
   profile          Profile?
-  recommendations  Recommendation[]
+  ideas            Idea[]
   userJourneys     UserJourney[]
+  promptPacks      PromptPack[]
+  customRequests   CustomPromptRequest[]
+  videoScripts     VideoScript[]
   milestones       UserMilestone[]
   adventures       Adventure[]
   notifications    Notification[]
   notificationPref NotificationPref?
-  assistantThreads AssistantThread[]
   subscription     Subscription?
 }
 
@@ -88,17 +92,14 @@ model VerificationToken {
   @@id([identifier, token])
 }
 
-enum WorkMode {
-  remote
-  local
-  hybrid
-}
-
-enum RiskTolerance {
-  low
-  medium
-  high
-}
+// ---------------------------------------------------------------------------
+// 7.2 — Profil et diagnostic
+//
+// Le diagnostic est public et sans inscription (section 8.1). Un profil peut
+// donc exister sans utilisateur : il est porté par `anonId`, un identifiant
+// tiré côté serveur et posé dans un cookie, puis rattaché au compte à
+// l'inscription.
+// ---------------------------------------------------------------------------
 
 enum ProfileStatus {
   student
@@ -109,65 +110,55 @@ enum ProfileStatus {
   other
 }
 
-enum EducationLevel {
-  none
-  highschool
-  bac2
-  bac3
-  bac5
-  phd
+enum RiskTolerance {
+  low
+  medium
+  high
+}
+
+/// Où il a connu le secteur de l'intérieur.
+enum DomainSource {
+  metier
+  etudes
+  passion
+  entourage
 }
 
 model Profile {
-  id     String @id @default(cuid())
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String  @id @default(cuid())
+  /// Nul tant que le diagnostic est anonyme.
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Identifiant du diagnostic anonyme, posé en cookie. Effacé au rattachement.
+  anonId String? @unique
 
-  // Situation
-  age            Int?
-  country        String?
-  city           String?
-  status         ProfileStatus?
-  educationLevel EducationLevel?
-  educationField String?
+  age     Int?
+  country String?
+  status  ProfileStatus?
 
-  // Goûts déclarés
-  likedSubjects    String[] @default([])
-  dislikedSubjects String[] @default([])
+  // Contraintes déclarées (section 8.1).
+  hoursPerWeek   Int?
+  budget         Int?
+  technicalLevel Int? // 0-5, pilote le choix du chemin technique (section 9.2)
+  goalRevenue    Int?
+  timeHorizon    Int? // en mois
+  riskTolerance  RiskTolerance?
+  showsFace      Boolean?
+  prefersSolo    Boolean?
+  /// Peut-il appeler dix personnes concernées demain ?
+  reachableCount Int?
 
-  // Contraintes
-  hoursPerWeek  Int?
-  hoursPerDay   Int?
-  initialBudget Int?
-  monthlyBudget Int?
+  // Reprise : clé de la dernière question répondue.
+  currentQuestionKey String?
+  completedAt        DateTime?
 
-  // Objectif
-  financialGoal Int?
-  timeHorizon   Int? // en mois
-  riskTolerance RiskTolerance?
-
-  // Préférences de travail
-  workMode        WorkMode?
-  showsFace       Boolean?
-  createsContent  Boolean?
-  prefersSolo     Boolean?
-  likesStrangers  Boolean?
-  likesSelling    Boolean?
-  likesCreating   Boolean?
-  likesAnalyzing  Boolean?
-  likesRepetition Boolean?
-  prefersFreedom  Boolean?
-
-  // Reprise de l'onboarding : clé de la dernière question répondue.
-  onboardingStep      String?
-  onboardingCompleted Boolean @default(false)
-
-  // Signaux extraits des réponses libres par l'IA (section 7).
+  /// Signaux structurés extraits des réponses libres par l'IA (section 8.2).
   derivedSignals Json?
 
   skills    UserSkill[]
+  domains   UserDomain[]
   interests UserInterest[]
-  habits    HabitAnswer[]
+  frictions FrictionAnswer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -191,6 +182,29 @@ model UserSkill {
   @@id([profileId, skillId])
 }
 
+/// Secteurs connus de l'intérieur — la dimension la plus discriminante du
+/// moteur (section 8.1).
+model Domain {
+  id         String          @id @default(cuid())
+  slug       String          @unique
+  label      String
+  /// Famille d'affichage : santé, restauration, bâtiment…
+  family     String
+  users      UserDomain[]
+  blueprints IdeaBlueprint[]
+}
+
+model UserDomain {
+  profileId     String
+  domainId      String
+  yearsExposure Int          @default(0)
+  source        DomainSource @default(metier)
+  profile       Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  domain        Domain       @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, domainId])
+}
+
 model Interest {
   id    String         @id @default(cuid())
   slug  String         @unique
@@ -207,7 +221,8 @@ model UserInterest {
   @@id([profileId, interestId])
 }
 
-model HabitAnswer {
+/// Réponses libres « ce qui l'agace » (section 8.1), analysées par l'IA.
+model FrictionAnswer {
   id          String  @id @default(cuid())
   profileId   String
   questionKey String
@@ -218,7 +233,130 @@ model HabitAnswer {
 }
 
 // ---------------------------------------------------------------------------
-// 6.2 — Business models
+// 7.3 — Moteur d'idées
+// ---------------------------------------------------------------------------
+
+/// Poids des dimensions du scoring. En base (section 8.2), jamais dans le code.
+model ScoringWeight {
+  dimension String @id
+  label     String
+  weight    Float
+  order     Int    @default(0)
+}
+
+enum PayerType {
+  business
+  professional
+  consumer
+}
+
+/// Archétype d'idée. Le moteur ne fabrique pas une idée depuis rien : il
+/// classe des archétypes contre un profil, puis l'IA rédige la restitution.
+model IdeaBlueprint {
+  id               String    @id @default(cuid())
+  slug             String    @unique
+  title            String
+  oneLiner         String    @db.Text
+  targetAudience   String
+  problem          String    @db.Text
+  solution         String    @db.Text
+  pricingModel     String
+  monthlyPrice     Int
+  /// 1 (trivial) à 5 (limite haute du parcours).
+  buildComplexity  Int
+  weeksToFirstEuro Int
+  payerType        PayerType
+
+  // Contraintes vérifiées contre le profil.
+  hoursPerWeekMin  Int @default(5)
+  monthlyFixedCost Int @default(0)
+
+  // Contraintes dures éliminatoires (section 8.2).
+  requiresComplexCode      Boolean @default(false)
+  requiresRegulatedLicense Boolean @default(false)
+  requiresPhysicalStock    Boolean @default(false)
+  requiresTeam             Boolean @default(false)
+
+  // Contraintes de compatibilité personnelle.
+  requiresFace     Boolean @default(false)
+  requiresOutbound Boolean @default(true)
+
+  isActive Boolean @default(true)
+
+  domains Domain[]
+  tags    IdeaBlueprintTag[]
+  ideas   Idea[]
+}
+
+model IdeaBlueprintTag {
+  id          String        @id @default(cuid())
+  blueprintId String
+  /// skill | interest | friction | payer
+  dimension   String
+  key         String
+  weight      Float         @default(1)
+  blueprint   IdeaBlueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
+
+  @@unique([blueprintId, dimension, key])
+  @@index([dimension, key])
+}
+
+enum IdeaStatus {
+  proposed
+  selected
+  rejected
+}
+
+model Idea {
+  id          String  @id @default(cuid())
+  userId      String?
+  /// Rattachement anonyme, comme le profil.
+  anonId      String?
+  blueprintId String
+
+  title           String
+  oneLiner        String @db.Text
+  targetAudience  String
+  problem         String @db.Text
+  solution        String @db.Text
+  pricingModel    String
+  monthlyPrice    Int
+  buildComplexity Int
+  timeToFirstEuro Int // en semaines
+
+  score           Float
+  rank            Int        @default(1)
+  breakdown       Json
+  rationale       String?    @db.Text
+  status          IdeaStatus @default(proposed)
+  rejectionReason String?    @db.Text
+  createdAt       DateTime   @default(now())
+
+  user        User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blueprint   IdeaBlueprint @relation(fields: [blueprintId], references: [id], onDelete: Cascade)
+  sources     IdeaSource[]
+  userJourney UserJourney[]
+  packs       PromptPack[]
+  scripts     VideoScript[]
+
+  @@index([userId, createdAt])
+  @@index([anonId, createdAt])
+}
+
+/// Traçabilité obligatoire (section 8.3) : chaque idée cite les éléments du
+/// profil qui l'ont produite, et l'interface les affiche.
+model IdeaSource {
+  id        String @id @default(cuid())
+  ideaId    String
+  dimension String
+  evidence  String @db.Text
+  idea      Idea   @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@index([ideaId])
+}
+
+// ---------------------------------------------------------------------------
+// 7.4 — Parcours de construction (13 phases)
 // ---------------------------------------------------------------------------
 
 enum Difficulty {
@@ -227,115 +365,34 @@ enum Difficulty {
   hard
 }
 
-model BusinessModel {
-  id                    String     @id @default(cuid())
-  slug                  String     @unique
-  name                  String
-  summary               String     @db.Text
-  economicModel         String
-  difficulty            Difficulty
-  minBudget             Int
-  maxBudget             Int
-  hoursPerWeekMin       Int
-  hoursPerWeekMax       Int
-  timeToFirstClientDays Int
-
-  // Poids de scoring par dimension. En base, jamais dans le code : passer de
-  // 1 à 50 business models ne doit demander aucune refonte.
-  scoringWeights Json
-  isActive       Boolean @default(true)
-
-  // Contraintes dures évaluées avant le scoring (section 7).
-  requiresFace          Boolean @default(false)
-  requiresContent       Boolean @default(false)
-  requiresSelling       Boolean @default(false)
-  requiresLocalPresence Boolean @default(false)
-
-  tags            BusinessTag[]
-  journeys        Journey[]
-  recommendations Recommendation[]
-}
-
-model BusinessTag {
-  id              String        @id @default(cuid())
-  businessModelId String
-  dimension       String // skills | interests | behavior | personality | market...
-  key             String
-  weight          Float         @default(1)
-  businessModel   BusinessModel @relation(fields: [businessModelId], references: [id], onDelete: Cascade)
-
-  @@unique([businessModelId, dimension, key])
-  @@index([dimension, key])
-}
-
-// ---------------------------------------------------------------------------
-// 6.3 — Recommandation
-// ---------------------------------------------------------------------------
-
-enum RecommendationStatus {
-  proposed
-  accepted
-  rejected
-}
-
-model Recommendation {
-  id              String               @id @default(cuid())
-  userId          String
-  businessModelId String
-  score           Float
-  rank            Int                  @default(1)
-  breakdown       Json // détail par dimension : explication + débogage
-  rationale       String?              @db.Text
-  status          RecommendationStatus @default(proposed)
-  rejectionReason String?              @db.Text
-  createdAt       DateTime             @default(now())
-
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  businessModel BusinessModel @relation(fields: [businessModelId], references: [id], onDelete: Cascade)
-
-  @@index([userId, createdAt])
-}
-
-// ---------------------------------------------------------------------------
-// 6.4 — Parcours : Business → Parcours → Phase → Étape → Sous-étape → Action
-// ---------------------------------------------------------------------------
-
-enum BudgetTier {
-  zero // 0 € — chemin organique
-  low // ~300 € — outils payants
-  high // ~2000 € — acquisition payante
-}
-
-enum ExperienceTier {
-  beginner
-  intermediate
-  advanced
+/// Chemin technique choisi à la phase 4 (section 9.2).
+enum TechPath {
+  navigateur
+  ordinateur
 }
 
 model Journey {
-  id              String         @id @default(cuid())
-  businessModelId String
-  name            String
-  budgetTier      BudgetTier
-  experienceTier  ExperienceTier
-  version         Int            @default(1)
-  isActive        Boolean        @default(true)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  version   Int      @default(1)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  businessModel BusinessModel @relation(fields: [businessModelId], references: [id], onDelete: Cascade)
-  phases        Phase[]
-  userJourneys  UserJourney[]
-
-  @@unique([businessModelId, budgetTier, experienceTier, version])
+  phases       Phase[]
+  userJourneys UserJourney[]
 }
 
 model Phase {
   id        String @id @default(cuid())
   journeyId String
   order     Int
+  key       String
   title     String
   goal      String @db.Text
+  /// Ce qui en ressort, une ligne.
+  outcome   String @db.Text
 
   journey Journey @relation(fields: [journeyId], references: [id], onDelete: Cascade)
   steps   Step[]
@@ -347,23 +404,23 @@ model Step {
   id               String     @id @default(cuid())
   phaseId          String
   order            Int
-  number           Int // numéro global dans le parcours, affiché à l'utilisateur
+  number           Int // numéro global, affiché à l'utilisateur
   title            String
   goal             String     @db.Text
   why              String     @db.Text
   estimatedMinutes Int
   difficulty       Difficulty @default(easy)
+  /// Étape propre à un chemin technique. Nul = commune aux deux.
+  techPath         TechPath?
 
-  // { requiresSteps: string[], requiresCheckpoints: string[] }
+  /// { requiresSteps: string[], requiresCheckpoints: string[] }
   unlockConditions Json?
 
   phase       Phase             @relation(fields: [phaseId], references: [id], onDelete: Cascade)
   subSteps    SubStep[]
   checkpoints Checkpoint[]
-  resources   Resource[]
   progress    StepProgress[]
-  adjustments Adjustment[]
-  threads     AssistantThread[]
+  prompts     GeneratedPrompt[]
 
   @@unique([phaseId, order])
 }
@@ -382,25 +439,39 @@ model SubStep {
 }
 
 model Action {
-  id          String  @id @default(cuid())
-  subStepId   String
-  order       Int
-  instruction String  @db.Text
-  externalUrl String?
-  templateRef String?
-  example     String? @db.Text
+  id                 String  @id @default(cuid())
+  subStepId          String
+  order              Int
+  instruction        String  @db.Text
+  externalUrl        String?
+  /// Slug d'un PromptTemplate. Le prompt n'est jamais écrit en dur ici
+  /// (section 9.3) : l'étape référence un gabarit, le moteur le remplit.
+  promptTemplateSlug String?
+  /// Capture annotée, servie depuis /public/guides.
+  screenshot         String?
 
   subStep SubStep @relation(fields: [subStepId], references: [id], onDelete: Cascade)
 
   @@unique([subStepId, order])
 }
 
+/// Certains critères demandent une preuve : une URL à coller, un paiement
+/// test à confirmer (section 9.4).
+enum ProofKind {
+  none
+  url
+  text
+}
+
 model Checkpoint {
-  id         String  @id @default(cuid())
+  id         String    @id @default(cuid())
   stepId     String
   order      Int
   label      String
-  isRequired Boolean @default(true)
+  isRequired Boolean   @default(true)
+  proofKind  ProofKind @default(none)
+  /// Champ de ProjectState alimenté par la preuve : repoUrl, deployUrl…
+  proofField String?
 
   step     Step                 @relation(fields: [stepId], references: [id], onDelete: Cascade)
   progress CheckpointProgress[]
@@ -408,27 +479,8 @@ model Checkpoint {
   @@unique([stepId, order])
 }
 
-enum ResourceType {
-  template
-  script
-  checklist
-  link
-  example
-}
-
-model Resource {
-  id     String       @id @default(cuid())
-  stepId String
-  type   ResourceType
-  title  String
-  url    String?
-  body   String?      @db.Text
-
-  step Step @relation(fields: [stepId], references: [id], onDelete: Cascade)
-}
-
 // ---------------------------------------------------------------------------
-// 6.5 — Progression
+// 7.5 — Progression
 // ---------------------------------------------------------------------------
 
 enum StepStatus {
@@ -442,36 +494,33 @@ model UserJourney {
   id              String    @id @default(cuid())
   userId          String
   journeyId       String
+  ideaId          String?
   startedAt       DateTime  @default(now())
   currentStepId   String?
-  // Ne décroît jamais (section 6.5).
+  /// Ne décroît jamais (section 2.3).
   progressPercent Int       @default(0)
+  techPath        TechPath?
   completedAt     DateTime?
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   journey Journey @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  idea    Idea?   @relation(fields: [ideaId], references: [id], onDelete: SetNull)
 
-  steps       StepProgress[]
-  adjustments Adjustment[]
-  dailyPlans  DailyPlan[]
-  threads     AssistantThread[]
+  steps        StepProgress[]
+  projectState ProjectState?
 
   @@unique([userId, journeyId])
   @@index([userId])
 }
 
 model StepProgress {
-  id            String     @id @default(cuid())
-  userJourneyId String
-  stepId        String
-  status        StepStatus @default(locked)
-  startedAt     DateTime?
-  completedAt   DateTime?
-
-  // Signaux d'exécution utilisés par les règles d'adaptation (section 10).
-  outreachSent    Int?
-  outreachReplies Int?
-  lastActivityAt  DateTime?
+  id             String     @id @default(cuid())
+  userJourneyId  String
+  stepId         String
+  status         StepStatus @default(locked)
+  startedAt      DateTime?
+  completedAt    DateTime?
+  lastActivityAt DateTime?
 
   userJourney UserJourney          @relation(fields: [userJourneyId], references: [id], onDelete: Cascade)
   step        Step                 @relation(fields: [stepId], references: [id], onDelete: Cascade)
@@ -485,6 +534,8 @@ model CheckpointProgress {
   stepProgressId String
   checkpointId   String
   checkedAt      DateTime @default(now())
+  /// Preuve collée par l'utilisateur, quand le critère en demande une.
+  proofValue     String?
 
   stepProgress StepProgress @relation(fields: [stepProgressId], references: [id], onDelete: Cascade)
   checkpoint   Checkpoint   @relation(fields: [checkpointId], references: [id], onDelete: Cascade)
@@ -492,42 +543,197 @@ model CheckpointProgress {
   @@unique([stepProgressId, checkpointId])
 }
 
-enum AdjustmentReason {
-  low_reply_rate
-  stalled_step
-  partial_checklist
-}
-
-model Adjustment {
-  id            String           @id @default(cuid())
-  userJourneyId String
-  stepId        String
-  reason        AdjustmentReason
-  suggestion    String           @db.Text
-  createdAt     DateTime         @default(now())
-  acceptedAt    DateTime?
-  dismissedAt   DateTime?
-
-  userJourney UserJourney @relation(fields: [userJourneyId], references: [id], onDelete: Cascade)
-  step        Step        @relation(fields: [stepId], references: [id], onDelete: Cascade)
-
-  @@unique([userJourneyId, stepId, reason])
-}
-
-model DailyPlan {
-  id               String   @id @default(cuid())
-  userJourneyId    String
-  date             DateTime @db.Date
-  tasks            Json
-  estimatedMinutes Int
+/// L'état du projet construit. C'est lui qui rend cohérents les prompts
+/// générés à la demande (section 11.6) : sans lui, chaque prompt repart de
+/// zéro et le projet devient incohérent.
+model ProjectState {
+  userJourneyId String   @id
+  projectName   String?
+  repoUrl       String?
+  deployUrl     String?
+  domainName    String?
+  /// [{ name, fields: [{ name, type }] }]
+  entities      Json?
+  /// [{ route, title, purpose }]
+  screens       Json?
+  /// { naming, language, styling… }
+  conventions   Json?
+  /// { framework, db, auth, payments… }
+  stack         Json?
+  updatedAt     DateTime @updatedAt
 
   userJourney UserJourney @relation(fields: [userJourneyId], references: [id], onDelete: Cascade)
-
-  @@unique([userJourneyId, date])
 }
 
 // ---------------------------------------------------------------------------
-// 6.6 — Jalons et aventures
+// 7.6 — Moteur de prompts (section 11)
+// ---------------------------------------------------------------------------
+
+/// Où coller le prompt.
+enum PromptTarget {
+  claude_code
+  replit
+  claude_web
+}
+
+model PromptTemplate {
+  id              String       @id @default(cuid())
+  slug            String       @unique
+  /// Bloc du pack séquencé : fondations, donnees, comptes, coeur…
+  blockKey        String
+  order           Int
+  title           String
+  objective       String       @db.Text
+  target          PromptTarget @default(claude_code)
+  /// Markdown, variables `{{ }}`.
+  body            String       @db.Text
+  expectedOutcome String       @db.Text
+  verification    String       @db.Text
+  /// Règle 11.8 : aucun prompt ne dépasse 4 000 caractères.
+  maxChars        Int          @default(4000)
+  /// Un gabarit de réparation n'entre pas dans le pack séquencé.
+  isRepair        Boolean      @default(false)
+  isActive        Boolean      @default(true)
+  version         Int          @default(1)
+
+  generated     GeneratedPrompt[]
+  errorPatterns ErrorPattern[]
+
+  @@index([blockKey, order])
+}
+
+model PromptPack {
+  id          String   @id @default(cuid())
+  userId      String
+  ideaId      String
+  generatedAt DateTime @default(now())
+  version     Int      @default(1)
+
+  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  idea     Idea                  @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  prompts  GeneratedPrompt[]
+  requests CustomPromptRequest[]
+
+  @@unique([userId, ideaId, version])
+}
+
+enum PromptStatus {
+  todo
+  copied
+  executed
+  validated
+}
+
+model GeneratedPrompt {
+  id              String       @id @default(cuid())
+  packId          String
+  templateId      String?
+  stepId          String?
+  order           Int
+  phaseKey        String
+  title           String
+  objective       String       @db.Text
+  body            String       @db.Text
+  target          PromptTarget @default(claude_code)
+  expectedOutcome String       @db.Text
+  verification    String       @db.Text
+  /// Prompt de réparation lié, proposé quand ça échoue.
+  repairSlug      String?
+  /// Généré à la demande plutôt qu'issu du pack séquencé.
+  isCustom        Boolean      @default(false)
+
+  status     PromptStatus @default(todo)
+  copiedAt   DateTime?
+  executedAt DateTime?
+  /// Pouce haut (1) ou bas (-1). Alimente l'amélioration des gabarits.
+  rating     Int?
+
+  pack     PromptPack           @relation(fields: [packId], references: [id], onDelete: Cascade)
+  template PromptTemplate?      @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  step     Step?                @relation(fields: [stepId], references: [id], onDelete: SetNull)
+  request  CustomPromptRequest?
+
+  @@index([packId, order])
+}
+
+/// Bibliothèque d'erreurs connues (section 11.5).
+model ErrorPattern {
+  id               String  @id @default(cuid())
+  signature        String  @unique
+  /// Expression régulière testée contre le message collé.
+  matcher          String
+  label            String
+  category         String
+  explanation      String  @db.Text
+  repairTemplateId String?
+
+  repairTemplate PromptTemplate? @relation(fields: [repairTemplateId], references: [id], onDelete: SetNull)
+}
+
+model CustomPromptRequest {
+  id                String   @id @default(cuid())
+  userId            String
+  packId            String
+  request           String   @db.Text
+  generatedPromptId String?  @unique
+  createdAt         DateTime @default(now())
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pack            PromptPack       @relation(fields: [packId], references: [id], onDelete: Cascade)
+  generatedPrompt GeneratedPrompt? @relation(fields: [generatedPromptId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// 7.7 — Les trente scripts (section 10)
+// ---------------------------------------------------------------------------
+
+enum VideoAngle {
+  probleme
+  demonstration
+  construire_en_public
+  pedagogie
+  coulisses
+  reponse
+}
+
+enum VideoStatus {
+  todo
+  filmed
+  published
+}
+
+model VideoScript {
+  id               String      @id @default(cuid())
+  userId           String
+  ideaId           String
+  dayNumber        Int
+  angle            VideoAngle
+  hook             String      @db.Text
+  body             String      @db.Text
+  /// [{ at, shot }]
+  shotPlan         Json
+  /// [{ at, text }]
+  onScreenText     Json
+  caption          String      @db.Text
+  pinnedComment    String      @db.Text
+  durationSeconds  Int
+  status           VideoStatus @default(todo)
+  /// Hors MVP (section 10.1) : le champ existe pour accueillir le rendu vidéo
+  /// plus tard sans migration lourde.
+  renderedVideoUrl String?
+  createdAt        DateTime    @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  idea Idea @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ideaId, dayNumber])
+  @@index([userId, dayNumber])
+}
+
+// ---------------------------------------------------------------------------
+// 7.8 — Jalons, aventures
 // ---------------------------------------------------------------------------
 
 model Milestone {
@@ -540,8 +746,8 @@ model Milestone {
   shares AdventureShare[]
 }
 
-// Garde-fou n° 3 : `declared` par défaut, `verified` uniquement si une source
-// de paiement est connectée. Aucune autre valeur n'existe.
+/// Garde-fou n° 4 : `declared` par défaut. `verified` n'existe que si le
+/// compte Stripe de l'utilisateur est connecté en lecture.
 enum VerificationStatus {
   declared
   verified
@@ -568,8 +774,8 @@ model Adventure {
   isPublic  Boolean  @default(false)
   story     String?  @db.Text
   startedAt DateTime @default(now())
-  // Garde-fou n° 1 : toute donnée de démonstration est marquée et affichée
-  // comme exemple.
+  /// Garde-fou n° 3 : toute donnée de démonstration est marquée, et l'interface
+  /// le dit.
   isDemo    Boolean  @default(false)
 
   user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -590,14 +796,13 @@ model AdventureShare {
 }
 
 // ---------------------------------------------------------------------------
-// 6.7 — Notifications, assistant, abonnement, feature flags
+// 7.9 — Notifications, abonnement, feature flags
 // ---------------------------------------------------------------------------
 
 enum NotificationType {
   daily_reminder
   inactivity
   milestone
-  adjustment
 }
 
 enum NotificationChannel {
@@ -630,43 +835,13 @@ model NotificationPref {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model AssistantThread {
-  id            String   @id @default(cuid())
-  userId        String
-  userJourneyId String?
-  stepId        String?
-  createdAt     DateTime @default(now())
-
-  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userJourney UserJourney?       @relation(fields: [userJourneyId], references: [id], onDelete: Cascade)
-  step        Step?              @relation(fields: [stepId], references: [id], onDelete: SetNull)
-  messages    AssistantMessage[]
-
-  @@unique([userId, stepId])
-}
-
-enum MessageRole {
-  user
-  assistant
-}
-
-model AssistantMessage {
-  id              String      @id @default(cuid())
-  threadId        String
-  role            MessageRole
-  content         String      @db.Text
-  contextSnapshot Json?
-  createdAt       DateTime    @default(now())
-
-  thread AssistantThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-
-  @@index([threadId, createdAt])
-}
-
+/// Les trois offres du site. Les prix vivent dans src/lib/offers.ts et les
+/// droits dans FeatureFlag : changer un prix ne touche pas au gating.
 enum Plan {
   free
-  pro
-  illimite
+  depart
+  construction
+  lancement
 }
 
 enum SubscriptionStatus {
@@ -683,11 +858,12 @@ model Subscription {
   /// Offre choisie sur l'écran des offres, en attente d'un paiement effectif.
   intendedPlan         Plan?
   intendedAt           DateTime?
-  /// Références Stripe. Le client est créé au premier paiement et réutilisé
-  /// ensuite, pour que l'historique de facturation reste d'un seul tenant.
   stripeCustomerId     String?            @unique
   stripeSubscriptionId String?            @unique
   cancelAtPeriodEnd    Boolean            @default(false)
+  /// Compteur du quota de prompts à la demande de l'offre gratuite.
+  customPromptsMonth   String?
+  customPromptsUsed    Int                @default(0)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

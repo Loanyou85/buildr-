@@ -1,108 +1,78 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { Plan } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
+import type { Plan } from '@prisma/client';
 import { db } from '@/server/db';
-import { requireUser } from '@/server/auth';
-import { OFFERS } from '@/lib/offers';
+import { auth } from '@/server/auth';
 import { getStripe, priceIdFor, stripeEnabled } from '@/server/stripe';
 import { absoluteUrl } from '@/lib/site';
-
-export async function paymentsEnabled(): Promise<boolean> {
-  return stripeEnabled();
-}
+import { offerFor } from '@/lib/offers';
 
 /**
- * Choix d'une offre.
+ * Choisir une offre.
  *
- * L'offre gratuite s'active immédiatement. Une offre payante ouvre un tunnel
- * de paiement Stripe ; c'est le webhook, et lui seul, qui accorde ensuite
- * l'accès. Tant qu'aucune clé n'est configurée, l'intention est enregistrée et
- * annoncée comme telle : on ne fait jamais croire à un paiement qui n'a pas eu
- * lieu.
+ * Tant que Stripe n'est pas branché, on enregistre l'intention et on le dit
+ * franchement : aucun accès n'est ouvert, aucun montant n'est débité. Ouvrir
+ * l'accès sans paiement reviendrait à simuler une vente.
  */
-export async function choosePlan(formData: FormData): Promise<void> {
-  const user = await requireUser();
-  const raw = String(formData.get('plan') ?? '');
-  const offer = OFFERS.find((o) => o.plan === raw);
-  if (!offer) redirect('/offres');
+export async function choisirOffre(formData: FormData): Promise<void> {
+  const plan = String(formData.get('plan') ?? '') as Plan;
+  if (!offerFor(plan)) redirect('/offres');
 
-  if (offer.price === 0) {
-    await db.subscription.upsert({
-      where: { userId: user.id },
-      update: { plan: Plan.free, status: 'active', intendedPlan: null, intendedAt: null },
-      create: { userId: user.id, plan: Plan.free },
-    });
-    revalidatePath('/app');
-    redirect('/app');
-  }
+  const session = await auth();
+  if (!session?.user?.id) redirect(`/connexion?suite=${encodeURIComponent('/offres')}`);
+  const userId = session.user.id;
 
-  const subscription = await db.subscription.upsert({
-    where: { userId: user.id },
-    update: { intendedPlan: offer.plan, intendedAt: new Date() },
-    create: { userId: user.id, plan: Plan.free, intendedPlan: offer.plan, intendedAt: new Date() },
+  await db.subscription.upsert({
+    where: { userId },
+    create: { userId, intendedPlan: plan, intendedAt: new Date() },
+    update: { intendedPlan: plan, intendedAt: new Date() },
   });
 
   const stripe = getStripe();
-  const priceId = priceIdFor(offer.plan);
-
+  const priceId = priceIdFor(plan);
   if (!stripe || !priceId) {
-    redirect(`/offres?paiement=indisponible&offre=${offer.plan}`);
+    revalidatePath('/offres');
+    redirect('/offres?paiement=indisponible');
   }
 
-  // Un client Stripe par utilisateur, réutilisé : l'historique de facturation
-  // reste d'un seul tenant même après un changement d'offre.
-  let customerId = subscription.stripeCustomerId;
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email: user.email ?? undefined,
-      name: user.name ?? undefined,
-      metadata: { userId: user.id },
-    });
-    customerId = customer.id;
-    await db.subscription.update({
-      where: { userId: user.id },
-      data: { stripeCustomerId: customerId },
-    });
-  }
+  const abonnement = await db.subscription.findUnique({ where: { userId } });
+  const user = await db.user.findUniqueOrThrow({ where: { id: userId }, select: { email: true } });
 
-  const session = await stripe.checkout.sessions.create({
+  const checkout = await stripe.checkout.sessions.create({
     mode: 'subscription',
-    customer: customerId,
     line_items: [{ price: priceId, quantity: 1 }],
-    locale: 'fr',
+    client_reference_id: userId,
+    // Le client est créé au premier paiement puis réutilisé, pour que
+    // l'historique de facturation reste d'un seul tenant.
+    customer: abonnement?.stripeCustomerId ?? undefined,
+    customer_email: abonnement?.stripeCustomerId ? undefined : user.email,
+    subscription_data: { metadata: { userId } },
+    metadata: { userId, plan },
     allow_promotion_codes: true,
-    // L'identifiant voyage avec la session : le webhook saura à qui accorder
-    // l'accès sans dépendre de l'e-mail, qui peut changer.
-    client_reference_id: user.id,
-    subscription_data: { metadata: { userId: user.id, plan: offer.plan } },
-    metadata: { userId: user.id, plan: offer.plan },
-    success_url: absoluteUrl('/app?abonnement=actif'),
-    cancel_url: absoluteUrl('/offres?paiement=annule'),
+    success_url: absoluteUrl('/app?bienvenue=1'),
+    cancel_url: absoluteUrl('/offres?retour=1'),
   });
 
-  if (!session.url) redirect(`/offres?paiement=indisponible&offre=${offer.plan}`);
-  redirect(session.url);
+  if (!checkout.url) redirect('/offres?paiement=indisponible');
+  redirect(checkout.url);
 }
 
-/**
- * Portail de facturation Stripe : changer de moyen de paiement, télécharger
- * ses factures, résilier. Rien de tout cela n'a à être réimplémenté ici.
- */
-export async function openBillingPortal(): Promise<void> {
-  const user = await requireUser();
+/** Portail de facturation : changer de carte, voir ses factures, résilier. */
+export async function ouvrirPortail(): Promise<void> {
+  const session = await auth();
+  if (!session?.user?.id) redirect('/connexion');
+
   const stripe = getStripe();
-  const subscription = await db.subscription.findUnique({ where: { userId: user.id } });
+  const abonnement = await db.subscription.findUnique({ where: { userId: session.user.id } });
+  if (!stripe || !abonnement?.stripeCustomerId) redirect('/app/compte?portail=indisponible');
 
-  if (!stripe || !subscription?.stripeCustomerId) {
-    redirect('/offres');
-  }
-
-  const session = await stripe.billingPortal.sessions.create({
-    customer: subscription.stripeCustomerId,
+  const portail = await stripe.billingPortal.sessions.create({
+    customer: abonnement.stripeCustomerId,
     return_url: absoluteUrl('/app/compte'),
   });
-
-  redirect(session.url);
+  redirect(portail.url);
 }
+
+export { stripeEnabled };

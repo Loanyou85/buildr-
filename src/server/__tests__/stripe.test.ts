@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { planForPriceId, priceIdFor, stripeEnabled, stripeMode } from '../stripe';
 
-const KEYS = ['STRIPE_SECRET_KEY', 'STRIPE_PRICE_PRO', 'STRIPE_PRICE_ILLIMITE'] as const;
+const KEYS = ['STRIPE_SECRET_KEY', 'STRIPE_PRICE_DEPART', 'STRIPE_PRICE_CONSTRUCTION'] as const;
 
 afterEach(() => {
   for (const key of KEYS) delete process.env[key];
@@ -18,28 +18,28 @@ describe('configuration Stripe', () => {
   });
 
   it('associe chaque offre à son tarif', () => {
-    process.env.STRIPE_PRICE_PRO = 'price_pro_123';
-    process.env.STRIPE_PRICE_ILLIMITE = 'price_illimite_456';
-    expect(priceIdFor('pro')).toBe('price_pro_123');
-    expect(priceIdFor('illimite')).toBe('price_illimite_456');
+    process.env.STRIPE_PRICE_DEPART = 'price_depart_123';
+    process.env.STRIPE_PRICE_CONSTRUCTION = 'price_construction_456';
+    expect(priceIdFor('depart')).toBe('price_depart_123');
+    expect(priceIdFor('construction')).toBe('price_construction_456');
     // L'offre gratuite n'a pas de tarif : elle ne passe jamais par Stripe.
     expect(priceIdFor('free')).toBeNull();
   });
 
   it('ne retourne pas de tarif vide, ce qui créerait une session invalide', () => {
-    process.env.STRIPE_PRICE_PRO = '   ';
-    expect(priceIdFor('pro')).toBeNull();
+    process.env.STRIPE_PRICE_DEPART = '   ';
+    expect(priceIdFor('depart')).toBeNull();
   });
 
   it('retrouve l’offre depuis le tarif, au retour du webhook', () => {
-    process.env.STRIPE_PRICE_PRO = 'price_pro_123';
-    process.env.STRIPE_PRICE_ILLIMITE = 'price_illimite_456';
-    expect(planForPriceId('price_pro_123')).toBe('pro');
-    expect(planForPriceId('price_illimite_456')).toBe('illimite');
+    process.env.STRIPE_PRICE_DEPART = 'price_depart_123';
+    process.env.STRIPE_PRICE_CONSTRUCTION = 'price_construction_456';
+    expect(planForPriceId('price_depart_123')).toBe('depart');
+    expect(planForPriceId('price_construction_456')).toBe('construction');
   });
 
   it('refuse un tarif inconnu plutôt que d’accorder un accès au hasard', () => {
-    process.env.STRIPE_PRICE_PRO = 'price_pro_123';
+    process.env.STRIPE_PRICE_DEPART = 'price_depart_123';
     expect(planForPriceId('price_inconnu')).toBeNull();
     expect(planForPriceId(null)).toBeNull();
     expect(planForPriceId(undefined)).toBeNull();

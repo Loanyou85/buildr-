@@ -35,20 +35,27 @@ export function stripeMode(): StripeMode {
   return 'production';
 }
 
+/** Variable d'environnement portant l'identifiant de tarif de chaque offre. */
+const PRICE_ENV: Partial<Record<Plan, string>> = {
+  depart: 'STRIPE_PRICE_DEPART',
+  construction: 'STRIPE_PRICE_CONSTRUCTION',
+  lancement: 'STRIPE_PRICE_LANCEMENT',
+};
+
 /** Identifiant de tarif Stripe correspondant à une offre. */
 export function priceIdFor(plan: Plan): string | null {
-  const byPlan: Partial<Record<Plan, string | undefined>> = {
-    pro: process.env.STRIPE_PRICE_PRO,
-    illimite: process.env.STRIPE_PRICE_ILLIMITE,
-  };
-  const id = byPlan[plan]?.trim();
+  const name = PRICE_ENV[plan];
+  if (!name) return null;
+  const id = process.env[name]?.trim();
   return id && id.length > 0 ? id : null;
 }
 
 /** Retrouve l'offre à partir d'un identifiant de tarif, au retour du webhook. */
 export function planForPriceId(priceId: string | null | undefined): Plan | null {
   if (!priceId) return null;
-  if (priceId === process.env.STRIPE_PRICE_PRO?.trim()) return 'pro';
-  if (priceId === process.env.STRIPE_PRICE_ILLIMITE?.trim()) return 'illimite';
+  for (const [plan, name] of Object.entries(PRICE_ENV)) {
+    const configured = process.env[name]?.trim();
+    if (configured && configured === priceId) return plan as Plan;
+  }
   return null;
 }
