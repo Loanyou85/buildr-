@@ -20,8 +20,14 @@ npm run dev
 
 Le produit fonctionne **sans clé d'API IA** : les signaux d'onboarding retombent sur une
 heuristique locale, l'explication de la recommandation est générée depuis le `breakdown`, et
-l'assistance répond avec le contenu réel de l'étape. Sans clé Resend, les liens de connexion
-et les notifications sont écrits dans la console.
+l'assistance répond avec le contenu réel de l'étape. Sans clé Resend, les notifications sont
+écrites dans la console — la connexion, elle, ne dépend d'aucun envoi d'e-mail.
+
+L'authentification se fait par **e-mail et mot de passe** : inscription en trois champs
+(prénom, e-mail, mot de passe), aucune confirmation à aller chercher dans sa boîte. Les
+empreintes sont calculées avec scrypt (`src/lib/auth/password.ts`) et les sessions sont
+signées (JWT), seule stratégie compatible avec un fournisseur à identifiants. Google reste
+disponible si ses variables sont renseignées.
 
 | Variable | Rôle |
 |---|---|
@@ -30,7 +36,7 @@ et les notifications sont écrits dans la console.
 | `AUTH_SECRET`, `AUTH_URL` | Auth.js v5 ; `AUTH_URL` sert aussi d'URL publique |
 | `NEXT_PUBLIC_APP_URL`, `VERCEL_URL` | replis pour l'URL publique (métadonnées, e-mails) |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | connexion Google, optionnelle |
-| `AUTH_RESEND_KEY`, `EMAIL_FROM` | magic link et notifications par e-mail |
+| `AUTH_RESEND_KEY`, `EMAIL_FROM` | notifications par e-mail (aucun e-mail n'est nécessaire pour se connecter) |
 | `ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL` | IA, **appels serveur uniquement** |
 | `ADMIN_EMAILS` | e-mails promus `role=admin` à la création du compte |
 | `CRON_SECRET` | protège `POST /api/notifications/run` |

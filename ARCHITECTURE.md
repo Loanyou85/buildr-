@@ -9,7 +9,7 @@ entreprise » à « j'ai construit mon entreprise ». Le produit n'est pas l'IA,
 prisma/           schema.prisma, migrations, seed.ts, seed/ (référentiel + parcours UGC)
 src/app/          routes (App Router)
   (marketing)/    landing publique, aventures publiques — territoire sombre
-  (auth)/         connexion, vérification, refus mineur
+  (auth)/         inscription, connexion, refus mineur
   onboarding/     une question par écran
   recommandation/ résultat du moteur
   app/            produit : aujourd'hui, chemin, étape, jalons, compte
@@ -26,7 +26,7 @@ src/lib/
   ai/             client Anthropic (serveur uniquement), prompts, signaux d'onboarding
   guardrails.ts   interdits de vocabulaire, declared vs verified, âge
 src/server/
-  auth.ts         Auth.js v5 (magic link + Google)
+  auth.ts         Auth.js v5 (e-mail + mot de passe, Google optionnel)
   db.ts           singleton Prisma
   actions/        Server Actions (onboarding, journey, assistant, admin, compte)
   features.ts     can(user, 'feature.key')
@@ -38,7 +38,7 @@ src/server/
 |---|---|
 | `/` | Landing publique, animée, sombre |
 | `/aventures`, `/aventure/[slug]` | Parcours réels partagés (vide tant que personne n'a partagé) |
-| `/connexion`, `/verifier-email`, `/trop-jeune` | Auth et garde-fou mineurs |
+| `/inscription`, `/connexion`, `/trop-jeune` | Auth et garde-fou mineurs |
 | `/onboarding` | Une question par écran, sauvegarde à chaque réponse |
 | `/recommandation` | Résultat : business principal + 2 alternatives |
 | `/app` | **Aujourd'hui** — l'écran le plus important |

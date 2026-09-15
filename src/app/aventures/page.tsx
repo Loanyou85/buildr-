@@ -40,7 +40,7 @@ export default async function AdventuresPage() {
             <Logo />
           </Link>
           <Button asChild variant="outline" size="sm">
-            <Link href="/connexion">Commencer</Link>
+            <Link href="/inscription">Commencer</Link>
           </Button>
         </div>
       </header>
@@ -59,7 +59,7 @@ export default async function AdventuresPage() {
             description="Nexteo n’affiche que des parcours réels. Tant que personne n’a partagé le sien, cette page reste vide — et la première aventure publiée sera la tienne si tu le souhaites."
             action={
               <Button asChild variant="outline" size="sm">
-                <Link href="/connexion">Commencer mon aventure</Link>
+                <Link href="/inscription">Commencer mon aventure</Link>
               </Button>
             }
           />

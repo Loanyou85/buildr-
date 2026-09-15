@@ -43,7 +43,7 @@ export default async function AdventurePage({ params }: { params: Promise<{ slug
             ← Les aventures
           </Link>
           <Button asChild variant="outline" size="sm">
-            <Link href="/connexion">Commencer</Link>
+            <Link href="/inscription">Commencer</Link>
           </Button>
         </div>
       </header>

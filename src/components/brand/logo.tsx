@@ -1,11 +1,11 @@
 import { cn } from '@/lib/utils';
 
 /**
- * Marque Nexteo — « les marches ».
+ * Marque Nexteo — « le cap ».
  *
- * Trois blocs qui montent en diagonale, jamais alignés sur une ligne de base
- * commune : c'est un escalier, pas un graphique. Ils grandissent, et le dernier
- * — le prochain — porte l'orange signal.
+ * Un escalier tracé d'un seul trait, qui monte, et un carré posé au sommet :
+ * la marche suivante, celle qui n'est pas encore franchie. C'est elle qui porte
+ * l'orange signal.
  *
  * Deux variantes, et la distinction n'est pas décorative :
  * - `accent` dans les territoires où l'orange n'a pas d'autre rôle : landing,
@@ -31,9 +31,14 @@ export function LogoMark({
       role="img"
       aria-label="Nexteo"
     >
-      <rect x="2" y="22" width="8" height="8" rx="2.5" fill="currentColor" />
-      <rect x="11.5" y="12" width="9" height="9" rx="2.8" fill="currentColor" />
-      <rect x="20" y="2" width="10" height="10" rx="3.1" fill={top} />
+      <path
+        d="M2 30v-6.5c0-1.4 1.1-2.5 2.5-2.5H11v-6.5c0-1.4 1.1-2.5 2.5-2.5H20"
+        stroke="currentColor"
+        strokeWidth="6.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <rect x="21" y="2" width="9" height="9" rx="2.8" fill={top} />
     </svg>
   );
 }

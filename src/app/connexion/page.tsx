@@ -1,21 +1,24 @@
 import Link from 'next/link';
-import { Logo } from '@/components/brand/logo';
 import { redirect } from 'next/navigation';
 import { auth, signIn } from '@/server/auth';
+import { Logo } from '@/components/brand/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { login } from '@/server/actions/auth';
 
 export const dynamic = 'force-dynamic';
 
+/** Connexion : adresse e-mail et mot de passe. */
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ erreur?: string; error?: string }>;
 }) {
   const session = await auth();
   if (session?.user?.id) redirect('/app');
 
-  const { error } = await searchParams;
+  const { erreur, error } = await searchParams;
+  const message = erreur ?? (error ? 'La connexion n’a pas abouti. Réessaie.' : null);
   const googleEnabled = Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
 
   return (
@@ -24,30 +27,41 @@ export default async function SignInPage({
         <Logo />
       </Link>
 
-      <h1 className="mt-10 text-2xl">Commencer ton aventure</h1>
+      <h1 className="mt-10 text-2xl">Reprendre ton parcours</h1>
       <p className="prose-nexteo mt-3 text-base text-beton-600">
-        Un lien de connexion t’est envoyé par e-mail. Pas de mot de passe à retenir.
+        Connecte-toi pour retrouver ton chemin là où tu l’as laissé.
       </p>
 
-      {error ? (
-        <p className="mt-6 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
-          La connexion n’a pas abouti. Redemande un lien : il est peut-être expiré.
-        </p>
+      {message ? (
+        <p className="mt-6 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">{message}</p>
       ) : null}
 
-      <form
-        action={async (formData: FormData) => {
-          'use server';
-          await signIn('resend', {
-            email: String(formData.get('email') ?? ''),
-            redirectTo: '/onboarding',
-          });
-        }}
-        className="mt-8 space-y-3"
-      >
-        <Input type="email" name="email" required placeholder="ton@email.fr" autoComplete="email" />
+      <form action={login} className="mt-8 space-y-3">
+        <label className="block">
+          <span className="text-sm font-medium text-encre">Ton adresse e-mail</span>
+          <Input
+            type="email"
+            name="email"
+            required
+            autoComplete="email"
+            placeholder="ton@email.fr"
+            className="mt-1.5"
+          />
+        </label>
+
+        <label className="block">
+          <span className="text-sm font-medium text-encre">Ton mot de passe</span>
+          <Input
+            type="password"
+            name="password"
+            required
+            autoComplete="current-password"
+            className="mt-1.5"
+          />
+        </label>
+
         <Button type="submit" variant="signal" size="lg" className="w-full">
-          Recevoir mon lien
+          Se connecter
         </Button>
       </form>
 
@@ -55,7 +69,7 @@ export default async function SignInPage({
         <form
           action={async () => {
             'use server';
-            await signIn('google', { redirectTo: '/onboarding' });
+            await signIn('google', { redirectTo: '/app' });
           }}
           className="mt-3"
         >
@@ -65,13 +79,11 @@ export default async function SignInPage({
         </form>
       ) : null}
 
-      {/* Garde-fou n° 4 : consentement explicite, données sensibles annoncées. */}
-      <p className="prose-nexteo mt-8 text-xs text-beton-600">
-        En continuant, tu acceptes que Nexteo traite les informations que tu donnes pendant le diagnostic
-        — situation, niveau d’études, budget, préférences de travail — pour construire ta recommandation
-        et ton parcours. Ces données sont hébergées dans l’Union européenne, conservées 36 mois, et tu
-        peux les exporter ou tout supprimer à tout moment depuis ton compte. Le service n’est pas
-        accessible avant 16 ans.
+      <p className="mt-6 text-sm text-beton-600">
+        Pas encore de compte ?{' '}
+        <Link href="/inscription" className="text-acier underline-offset-4 hover:underline">
+          Créer mon compte
+        </Link>
       </p>
     </div>
   );

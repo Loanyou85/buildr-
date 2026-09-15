@@ -63,7 +63,7 @@ export function Hero() {
 
             <motion.div {...appear(3)} className="mt-10 flex flex-wrap items-center gap-4">
               <Link
-                href="/connexion"
+                href="/inscription"
                 className="inline-flex h-13 items-center rounded-xl bg-signal px-7 text-base font-medium text-white transition-colors hover:bg-[#f06f12]"
               >
                 Commencer mon aventure

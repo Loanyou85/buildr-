@@ -28,7 +28,7 @@ export function TestimonialWall({ entries }: { entries: WallEntry[] }) {
             reste vide — et c’est volontaire. La première aventure publiée sera peut-être la tienne.
           </p>
           <Link
-            href="/connexion"
+            href="/inscription"
             className="mt-8 inline-flex h-12 items-center rounded-xl border border-white/20 px-6 text-sm text-white transition-colors hover:border-acier hover:text-acier"
           >
             Commencer mon aventure

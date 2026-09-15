@@ -18,7 +18,7 @@ export function FinalCta() {
         </p>
 
         <Link
-          href="/connexion"
+          href="/inscription"
           className="mt-10 inline-flex h-13 items-center rounded-xl bg-signal px-8 text-base font-medium text-white transition-colors hover:bg-[#f06f12]"
         >
           Commencer mon aventure

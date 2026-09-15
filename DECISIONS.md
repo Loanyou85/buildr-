@@ -80,3 +80,22 @@ compte plus que la décision.
   par écran. Partout ailleurs — landing, connexion, favicon, carte de partage — la variante
   colorée s'applique. Vérifié à l'écran : l'écran « Aujourd'hui » ne contient qu'un seul
   élément orange, le bouton d'action.
+
+## Authentification
+
+- **E-mail et mot de passe, sans confirmation par e-mail.** Le lien magique ajoutait un
+  aller-retour dans la boîte de réception avant même d'avoir vu le produit, et rendait la
+  connexion dépendante de la délivrabilité d'un e-mail. L'inscription demande trois champs —
+  prénom, e-mail, mot de passe — et ouvre directement le diagnostic.
+- **Conséquence technique assumée : sessions signées (JWT) au lieu de sessions en base.** Un
+  fournisseur à identifiants ne peut pas s'appuyer sur l'adaptateur de base. L'adaptateur
+  Prisma reste en place pour Google. Les tests de bout en bout passent désormais par le vrai
+  formulaire de connexion, ce qui est une amélioration : plus de raccourci par cookie fabriqué.
+- **scrypt plutôt qu'une dépendance native.** Coûteux en mémoire, donc résistant aux attaques
+  parallélisées sur carte graphique, présent dans Node, et sans compilation à prévoir sur une
+  plateforme serverless. Les paramètres sont stockés dans l'empreinte pour pouvoir être durcis
+  sans invalider les comptes existants.
+- **Un seul message d'erreur pour la connexion.** « Adresse e-mail ou mot de passe incorrect » :
+  distinguer les deux cas revient à confirmer qu'une adresse existe.
+- **Le logo est « le cap »** : un escalier tracé d'un seul trait avec un carré posé au sommet,
+  la marche qui n'est pas encore franchie, seule à porter l'orange.

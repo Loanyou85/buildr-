@@ -1,25 +1,64 @@
-import { expect, test, type BrowserContext } from '@playwright/test';
-import { cleanupUser, completeProfile, createSignedInUser, db } from './fixtures';
+import { expect, test } from '@playwright/test';
+import { cleanupUser, completeProfile, createAccount, db, signIn, TEST_PASSWORD } from './fixtures';
 
 const EMAIL = 'e2e-parcours@nexteo.test';
-
-async function signIn(context: BrowserContext, sessionToken: string) {
-  await context.addCookies([
-    {
-      name: 'authjs.session-token',
-      value: sessionToken,
-      domain: '127.0.0.1',
-      path: '/',
-      httpOnly: true,
-      sameSite: 'Lax',
-    },
-  ]);
-}
 
 test.describe('Le chemin, de bout en bout', () => {
   test.afterAll(async () => {
     await cleanupUser(EMAIL);
     await db.$disconnect();
+  });
+
+  test('inscription en trois champs, puis reconnexion', async ({ page }) => {
+    const email = 'e2e-inscription@nexteo.test';
+    await cleanupUser(email);
+
+    await page.goto('/inscription');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Commencer ton aventure');
+
+    // Le prénom est demandé au-dessus de l'adresse et du mot de passe.
+    const labels = await page.locator('form label span').first().innerText();
+    expect(labels).toContain('prénom');
+
+    await page.getByLabel('Ton prénom').fill('Camille');
+    await page.getByLabel('Ton adresse e-mail').fill(email);
+    await page.getByLabel('Ton mot de passe').fill(TEST_PASSWORD);
+    await page.getByRole('button', { name: 'Créer mon compte' }).click();
+
+    // Aucun écran d'attente d'e-mail : on entre directement dans le diagnostic.
+    await page.waitForURL('**/onboarding**');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Quel âge as-tu');
+
+    const created = await db.user.findUniqueOrThrow({ where: { email } });
+    expect(created.name).toBe('Camille');
+    expect(created.passwordHash).toBeTruthy();
+    // Le mot de passe n'est jamais stocké en clair.
+    expect(created.passwordHash).not.toContain(TEST_PASSWORD);
+    expect(created.consentAcceptedAt).not.toBeNull();
+
+    // Déconnexion puis reconnexion avec les mêmes identifiants.
+    await page.context().clearCookies();
+    await signIn(page, email);
+    await expect(page).toHaveURL(/\/(app|onboarding)/);
+
+    await page.goto('about:blank');
+    await cleanupUser(email);
+  });
+
+  test('un mot de passe erroné est refusé sans dire lequel des deux est faux', async ({ page }) => {
+    const email = 'e2e-mauvais-mdp@nexteo.test';
+    await createAccount({ email });
+
+    await page.goto('/connexion');
+    await page.getByLabel('Ton adresse e-mail').fill(email);
+    await page.getByLabel('Ton mot de passe').fill('mauvaismotdepasse');
+    await page.getByRole('button', { name: 'Se connecter' }).click();
+
+    await expect(page.getByText('Adresse e-mail ou mot de passe incorrect.')).toBeVisible();
+    await expect(page).toHaveURL(/connexion/);
+
+    await page.goto('about:blank');
+    await cleanupUser(email);
   });
 
   test('landing publique : une seule action principale, aucun faux témoignage', async ({ page }) => {
@@ -38,10 +77,10 @@ test.describe('Le chemin, de bout en bout', () => {
     }
   });
 
-  test('du diagnostic au premier « J’ai terminé »', async ({ page, context }) => {
-    const { user, sessionToken } = await createSignedInUser({ email: EMAIL, pro: true });
+  test('du diagnostic au premier « J’ai terminé »', async ({ page }) => {
+    const user = await createAccount({ email: EMAIL, pro: true });
     await completeProfile(user.id);
-    await signIn(context, sessionToken);
+    await signIn(page, EMAIL);
 
     // --- Recommandation ---
     await page.goto('/recommandation');
@@ -103,11 +142,11 @@ test.describe('Le chemin, de bout en bout', () => {
     expect(nextStep.status).toBe('available');
   });
 
-  test('la progression ne recule jamais', async ({ page, context }) => {
+  test('la progression ne recule jamais', async ({ page }) => {
     const email = 'e2e-progression@nexteo.test';
-    const { user, sessionToken } = await createSignedInUser({ email, pro: true });
+    const user = await createAccount({ email, pro: true });
     await completeProfile(user.id);
-    await signIn(context, sessionToken);
+    await signIn(page, email);
 
     await page.goto('/recommandation');
     await page.getByRole('button', { name: 'Commencer' }).click();
@@ -136,10 +175,10 @@ test.describe('Le chemin, de bout en bout', () => {
     await cleanupUser(email);
   });
 
-  test('un mineur de moins de 16 ans est refusé et son compte supprimé', async ({ page, context }) => {
+  test('un mineur de moins de 16 ans est refusé et son compte supprimé', async ({ page }) => {
     const email = 'e2e-mineur@nexteo.test';
-    const { user, sessionToken } = await createSignedInUser({ email });
-    await signIn(context, sessionToken);
+    const user = await createAccount({ email });
+    await signIn(page, email);
 
     await page.goto('/onboarding?q=0');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Quel âge as-tu');
@@ -154,10 +193,10 @@ test.describe('Le chemin, de bout en bout', () => {
     expect(deleted).toBeNull();
   });
 
-  test('l’onboarding sauvegarde à chaque réponse et reprend où on s’est arrêté', async ({ page, context }) => {
+  test('l’onboarding sauvegarde à chaque réponse et reprend où on s’est arrêté', async ({ page }) => {
     const email = 'e2e-onboarding@nexteo.test';
-    const { user, sessionToken } = await createSignedInUser({ email });
-    await signIn(context, sessionToken);
+    const user = await createAccount({ email });
+    await signIn(page, email);
 
     await page.goto('/onboarding?q=0');
     await page.locator('input[name="value"]').fill('27');

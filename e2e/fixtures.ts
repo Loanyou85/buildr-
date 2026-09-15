@@ -1,19 +1,26 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
+import type { Page } from '@playwright/test';
+import { hashPassword } from '../src/lib/auth/password';
 
 export const db = new PrismaClient();
 
+export const TEST_PASSWORD = 'motdepassedetest';
+
 /**
- * Crée un utilisateur avec une session valide, sans passer par l'e-mail.
- * Auth.js en stratégie base de données : un cookie de session suffit.
+ * Crée un compte comme le ferait le formulaire d'inscription. La connexion
+ * elle-même passe par l'interface : depuis que les sessions sont signées et
+ * non stockées, il n'y a plus de raccourci — et c'est tant mieux, le test
+ * emprunte le même chemin que l'utilisateur.
  */
-export async function createSignedInUser(options: { email: string; pro?: boolean; age?: number }) {
+export async function createAccount(options: { email: string; pro?: boolean; name?: string }) {
   await db.user.deleteMany({ where: { email: options.email } });
 
   const user = await db.user.create({
     data: {
       email: options.email,
-      emailVerified: new Date(),
-      name: 'Testeur',
+      name: options.name ?? 'Testeur',
+      passwordHash: await hashPassword(TEST_PASSWORD),
+      role: Role.user,
       consentAcceptedAt: new Date(),
       consentVersion: '2026-01',
       subscription: { create: { plan: options.pro ? 'pro' : 'free' } },
@@ -21,25 +28,21 @@ export async function createSignedInUser(options: { email: string; pro?: boolean
     },
   });
 
-  const sessionToken = `e2e-${Math.random().toString(36).slice(2)}-${Date.now()}`;
-  await db.session.create({
-    data: {
-      sessionToken,
-      userId: user.id,
-      expires: new Date(Date.now() + 86_400_000),
-    },
-  });
+  return user;
+}
 
-  return { user, sessionToken };
+/** Connexion par le formulaire, comme un utilisateur. */
+export async function signIn(page: Page, email: string, password: string = TEST_PASSWORD) {
+  await page.goto('/connexion');
+  await page.getByLabel('Ton adresse e-mail').fill(email);
+  await page.getByLabel('Ton mot de passe').fill(password);
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.waitForURL(/\/(app|onboarding)/);
 }
 
 /** Profil complet, pour attaquer directement la recommandation. */
 export async function completeProfile(userId: string, overrides: Record<string, unknown> = {}) {
-  const profile = await db.profile.upsert({
-    where: { userId },
-    update: {},
-    create: { userId },
-  });
+  const profile = await db.profile.upsert({ where: { userId }, update: {}, create: { userId } });
 
   const [videoShooting, videoEditing, copywriting] = await Promise.all([
     db.skill.findUniqueOrThrow({ where: { slug: 'video_shooting' } }),
