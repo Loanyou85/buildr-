@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { TopBar } from '@/components/shell/top-bar';
 import { StickyAction } from '@/components/shell/sticky-action';
@@ -67,18 +68,26 @@ export default async function DiagnosticPage({
           )}
         </form>
 
-        {index > 0 ? (
-          <form action={revenir} className="mt-6 flex justify-center">
-            <input type="hidden" name="index" value={index} />
-            <Button type="submit" variant="fantome" taille="sm">
-              Revenir à la question précédente
-            </Button>
-          </form>
-        ) : null}
-
         {choixUnique ? (
           <p className="mt-6 text-center text-xs text-gris-300">Touche une réponse pour continuer.</p>
         ) : null}
+
+        <div className="mt-8 flex flex-col items-center gap-3 border-t border-gris-700/60 pt-6">
+          {index > 0 ? (
+            <form action={revenir}>
+              <input type="hidden" name="index" value={index} />
+              <Button type="submit" variant="fantome" taille="sm">
+                ← Question précédente
+              </Button>
+            </form>
+          ) : null}
+
+          {/* Une porte d'entrée pour qui revient : sans ça, quelqu'un qui a
+              déjà un compte n'a d'autre choix que de refaire le diagnostic. */}
+          <Link href="/connexion" className="tactile flex items-center text-xs text-gris-300 underline underline-offset-4">
+            J’ai déjà un compte
+          </Link>
+        </div>
       </main>
     </>
   );

@@ -139,6 +139,30 @@ test.describe('le diagnostic', () => {
     // Le profil du serveur doit sortir une idée de restauration en tête.
     const principale = page.getByRole('heading', { level: 2 }).first();
     await expect(principale).toContainText(/restaurant/i);
+
+    // Le verdict n'est pas un cul-de-sac : on peut revenir, tout refaire, ou
+    // rejoindre un compte existant.
+    await expect(page.getByRole('link', { name: '← Revenir aux questions' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Modifier mes réponses' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Connecte-toi' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Recommencer le diagnostic' }).click();
+    await page.waitForURL(/\/diagnostic(\?|$)/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Quel âge as-tu');
+  });
+
+  test('on peut revenir en arrière et se connecter depuis n’importe quelle question', async ({ page }) => {
+    await page.goto('/diagnostic');
+    // Première question : rien derrière, mais une porte d'entrée pour qui revient.
+    await expect(page.getByRole('link', { name: 'J’ai déjà un compte' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '← Question précédente' })).toHaveCount(0);
+
+    await page.getByRole('button', { name: '18 à 24 ans' }).click();
+    await page.waitForURL(/q=1/);
+
+    await page.getByRole('button', { name: '← Question précédente' }).click();
+    await page.waitForURL(/q=0/);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Quel âge as-tu');
   });
 
   test('un mineur de moins de seize ans est arrêté avant le compte', async ({ page }) => {
@@ -280,7 +304,12 @@ test.describe('quand quelque chose casse', () => {
     expect(reponse.status(), 'la base doit répondre et le contenu être en place').toBe(200);
 
     const sante = await reponse.json();
-    expect(sante.base).toBe('joignable');
+    expect(sante.etat).toBe('ok');
+    expect(sante.lecture).toBe('ok');
+    // L'écriture est testée pour de vrai : c'est ce que fait la première
+    // question du diagnostic, et donc le premier endroit où ça casse.
+    expect(sante.ecriture).toBe('ok');
+    expect(sante.cookies).toBe('ok');
     expect(sante.contenu).toBe('complet');
     expect(sante.details.phases).toBe(13);
     expect(sante.details.archetypes).toBeGreaterThan(0);

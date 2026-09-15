@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import type { DomainSource, Prisma, ProfileStatus } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { DomainSource, ProfileStatus } from '@prisma/client';
 import { db } from '@/server/db';
 import { ensureProfile, currentProfile } from '@/server/diagnostic';
 import { genererIdees } from '@/server/ideas';
@@ -148,6 +149,47 @@ export async function repondre(formData: FormData): Promise<void> {
   const suivante = index + 1;
   if (suivante >= QUESTIONS.length) redirect('/diagnostic/analyse');
   redirect(`/diagnostic?q=${suivante}`);
+}
+
+/**
+ * Repart de zéro. Les réponses sont effacées, les idées proposées aussi — mais
+ * pas celle qui a été choisie ni le parcours en cours : quelqu'un qui cherche
+ * une deuxième idée ne doit pas perdre le SaaS qu'il est en train de
+ * construire.
+ */
+export async function recommencerDiagnostic(): Promise<void> {
+  const profile = await currentProfile();
+  if (!profile) redirect('/diagnostic');
+
+  const cle = profile.userId ? { userId: profile.userId } : { anonId: profile.anonId! };
+
+  await db.$transaction([
+    db.frictionAnswer.deleteMany({ where: { profileId: profile.id } }),
+    db.userDomain.deleteMany({ where: { profileId: profile.id } }),
+    db.userSkill.deleteMany({ where: { profileId: profile.id } }),
+    db.userInterest.deleteMany({ where: { profileId: profile.id } }),
+    db.idea.deleteMany({ where: { ...cle, status: { in: ['proposed', 'rejected'] } } }),
+    db.profile.update({
+      where: { id: profile.id },
+      data: {
+        currentQuestionKey: null,
+        completedAt: null,
+        derivedSignals: Prisma.DbNull,
+        status: null,
+        hoursPerWeek: null,
+        budget: null,
+        technicalLevel: null,
+        goalRevenue: null,
+        timeHorizon: null,
+        showsFace: null,
+        prefersSolo: null,
+        reachableCount: null,
+      },
+    }),
+  ]);
+
+  revalidatePath('/mes-idees');
+  redirect('/diagnostic');
 }
 
 /** Revient d'une question. La barre de progression, elle, ne recule pas. */

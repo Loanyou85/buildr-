@@ -112,6 +112,17 @@ export default async function ComptePage({
       </section>
 
       <section className="mt-8">
+        <h2 className="text-base font-bold text-white">Une autre idée</h2>
+        <p className="mt-2 text-sm text-gris-300">
+          Tu peux refaire le diagnostic quand tu veux. Le SaaS que tu construis et ta progression
+          restent intacts.
+        </p>
+        <Button asChild taille="sm" variant="secondaire" className="mt-3">
+          <Link href="/mes-idees">Revoir mes idées</Link>
+        </Button>
+      </section>
+
+      <section className="mt-8">
         <h2 className="text-base font-bold text-white">Mes données</h2>
         <p className="mt-2 text-sm text-gris-300">
           Compte créé le {formatDateFr(compte.createdAt)}. Conservation : {compte.dataRetentionMonths}{' '}

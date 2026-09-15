@@ -8,6 +8,8 @@ import { db } from '@/server/db';
 import { currentProfile } from '@/server/diagnostic';
 import { redigerJustification } from '@/server/ideas';
 import { MAX_REJETS } from '@/lib/ideas/politique';
+import { QUESTIONS } from '@/lib/diagnostic/questions';
+import { recommencerDiagnostic } from '@/server/actions/diagnostic';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,9 +42,16 @@ export default async function MesIdeesPage({
             Tu les as toutes écartées. Reprends le diagnostic en ajoutant un milieu que tu connais :
             c’est là que le moteur trouve ce qu’il te propose.
           </p>
-          <Button asChild taille="bloc" className="mt-6">
-            <Link href="/diagnostic?q=2">Compléter mon profil</Link>
-          </Button>
+          <div className="mt-6 space-y-3">
+            <Button asChild taille="bloc">
+              <Link href="/diagnostic?q=2">Compléter mon profil</Link>
+            </Button>
+            <form action={recommencerDiagnostic}>
+              <Button type="submit" variant="secondaire" taille="bloc">
+                Tout recommencer
+              </Button>
+            </form>
+          </div>
         </main>
       </>
     );
@@ -79,7 +88,14 @@ export default async function MesIdeesPage({
     <>
       <TopBar />
       <main className="mx-auto max-w-md px-4 pb-16 pt-6">
-        <h1 className="text-xl font-extrabold text-white">Trois idées, construites à partir de tes réponses.</h1>
+        <Link
+          href={`/diagnostic?q=${QUESTIONS.length - 1}`}
+          className="tactile inline-flex items-center text-xs text-gris-300 underline underline-offset-4"
+        >
+          ← Revenir aux questions
+        </Link>
+
+        <h1 className="mt-4 text-xl font-extrabold text-white">Trois idées, construites à partir de tes réponses.</h1>
         <p className="mt-2 text-sm text-gris-300">
           Aucune ne sort d’une liste toute faite. Chacune cite ce que tu as répondu.
         </p>
@@ -114,9 +130,32 @@ export default async function MesIdeesPage({
           </>
         ) : null}
 
-        <p className="mt-10 text-center text-xs text-gris-300">
-          Tu peux revenir sur ce choix plus tard. Rien n’est figé.
-        </p>
+        <section className="mt-12 border-t border-gris-700/60 pt-6">
+          <p className="text-center text-xs text-gris-300">
+            Tu peux revenir sur ce choix plus tard. Rien n’est figé.
+          </p>
+
+          <div className="mt-5 space-y-3">
+            <Button asChild variant="secondaire" taille="bloc">
+              <Link href={`/diagnostic?q=${QUESTIONS.length - 1}`}>Modifier mes réponses</Link>
+            </Button>
+
+            {/* Chercher une deuxième idée ne doit pas obliger à créer un
+                deuxième compte. */}
+            <form action={recommencerDiagnostic}>
+              <Button type="submit" variant="fantome" taille="bloc">
+                Recommencer le diagnostic
+              </Button>
+            </form>
+          </div>
+
+          <p className="mt-6 text-center text-xs text-gris-300">
+            Tu as déjà un compte ?{' '}
+            <Link href="/connexion" className="text-neo-100 underline underline-offset-4">
+              Connecte-toi
+            </Link>
+          </p>
+        </section>
       </main>
     </>
   );
