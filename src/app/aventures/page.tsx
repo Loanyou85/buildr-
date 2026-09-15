@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Logo } from '@/components/brand/logo';
 import { db } from '@/server/db';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -35,8 +36,8 @@ export default async function AdventuresPage() {
     <div className="min-h-dvh bg-beton-100">
       <header className="border-b border-beton-300 bg-blanc">
         <div className="mx-auto flex h-14 max-w-4xl items-center justify-between px-5">
-          <Link href="/" className="font-display text-base font-bold tracking-[-0.02em] text-encre">
-            NEXTEO
+          <Link href="/" className="text-encre">
+            <Logo />
           </Link>
           <Button asChild variant="outline" size="sm">
             <Link href="/connexion">Commencer</Link>

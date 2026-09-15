@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Logo } from '@/components/brand/logo';
 import { redirect } from 'next/navigation';
 import { auth } from '@/server/auth';
 
@@ -13,8 +14,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="min-h-dvh bg-beton-100">
       <header className="border-b border-beton-300 bg-blanc">
         <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-5">
-          <Link href="/admin" className="font-display text-base font-bold tracking-[-0.02em] text-encre">
-            NEXTEO <span className="text-beton-600">admin</span>
+          <Link href="/admin" className="flex items-center gap-2 text-encre">
+            <Logo variant="mono" />
+            <span className="font-display text-base font-bold text-beton-600">admin</span>
           </Link>
           <Link href="/app" className="text-sm text-beton-600 hover:text-encre">
             Retour à l’app

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/brand/logo';
 import { DECLARED_LABEL } from '@/lib/guardrails';
 import { formatDateFr, formatEuros } from '@/lib/utils';
 
@@ -52,7 +53,12 @@ export function ShareCard({
         className="relative overflow-hidden rounded-card bg-plan-900 px-8 py-10 text-white"
       >
         <div className="glow-acier pointer-events-none absolute -right-20 -top-20 size-64" aria-hidden />
-        <p className="relative font-display text-xs font-bold tracking-[0.12em] text-white/60">NEXTEO</p>
+        <Logo
+          variant="accent"
+          className="relative text-white/70"
+          markClassName="size-5"
+          wordClassName="text-xs tracking-[0.12em]"
+        />
         <p className="relative mt-6 font-display text-2xl font-bold tracking-[-0.02em]">{milestoneLabel}</p>
         {businessName ? <p className="relative mt-1 text-sm text-white/70">{businessName}</p> : null}
         {declaredValue !== null ? (

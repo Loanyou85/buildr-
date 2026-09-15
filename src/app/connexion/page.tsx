@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Logo } from '@/components/brand/logo';
 import { redirect } from 'next/navigation';
 import { auth, signIn } from '@/server/auth';
 import { Button } from '@/components/ui/button';
@@ -19,8 +20,8 @@ export default async function SignInPage({
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-md flex-col justify-center px-5 py-16">
-      <Link href="/" className="font-display text-base font-bold tracking-[-0.02em] text-encre">
-        NEXTEO
+      <Link href="/" className="text-encre">
+        <Logo />
       </Link>
 
       <h1 className="mt-10 text-2xl">Commencer ton aventure</h1>

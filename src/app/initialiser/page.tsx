@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Logo } from '@/components/brand/logo';
 import { InitialiserForm } from '@/components/app/initialiser-form';
 
 /**
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 export default function InitialiserPage() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center px-5 py-16">
-      <p className="font-display text-sm font-bold tracking-[0.02em] text-beton-600">NEXTEO</p>
+      <Logo variant="mono" className="text-beton-600" wordClassName="text-sm" />
       <h1 className="mt-4 text-2xl">Initialiser le référentiel</h1>
       <p className="prose-nexteo mt-3 text-base text-beton-600">
         Cette opération remplit la base avec les compétences, les intérêts, les business models et

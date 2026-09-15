@@ -68,3 +68,15 @@ compte plus que la décision.
   terminal, parce qu'une base de production vide rend le produit inutilisable (aucun business
   model à recommander) et que tout le monde n'a pas Node installé. Fermée par défaut : sans
   `SEED_SECRET`, elle répond 503.
+
+## Marque
+
+- **Le logo est « les marches ».** Trois blocs qui montent en diagonale, de taille croissante,
+  le dernier en orange signal. Aucun ne partage de ligne de base : c'est ce qui le distingue
+  d'un graphique en barres, piste écartée pour cette raison. Une piste « escalier tracé » avait
+  plus de caractère à grande taille mais se désagrégeait à 16 px — le favicon a tranché.
+- **Deux variantes, pour une raison de fond.** Dans l'application, la marque est monochrome :
+  l'orange y signifie une seule chose, la prochaine action, et ne doit apparaître qu'une fois
+  par écran. Partout ailleurs — landing, connexion, favicon, carte de partage — la variante
+  colorée s'applique. Vérifié à l'écran : l'écran « Aujourd'hui » ne contient qu'un seul
+  élément orange, le bouton d'action.

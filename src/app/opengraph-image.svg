@@ -1,0 +1,14 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0D1E38"/>
+  <g transform="translate(96 232) scale(2.6)">
+    <rect x="2" y="22" width="8" height="8" rx="2.5" fill="#FFFFFF"/>
+    <rect x="11.5" y="12" width="9" height="9" rx="2.8" fill="#FFFFFF"/>
+    <rect x="20" y="2" width="10" height="10" rx="3.1" fill="#FF7A1A"/>
+  </g>
+  <text x="192" y="318" font-family="system-ui, sans-serif" font-size="46" font-weight="800"
+        letter-spacing="1" fill="#FFFFFF">NEXTEO</text>
+  <text x="96" y="420" font-family="system-ui, sans-serif" font-size="58" font-weight="800"
+        fill="#FFFFFF">Ton business. Construis-le.</text>
+  <text x="96" y="478" font-family="system-ui, sans-serif" font-size="26"
+        fill="#FFFFFF" opacity="0.65">Découvre l’activité qui te correspond, puis construis-la étape par étape.</text>
+</svg>
