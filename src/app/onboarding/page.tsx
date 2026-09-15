@@ -65,10 +65,13 @@ function readCurrentValue(
   if (!profile) return null;
 
   if (field === 'habit') {
-    return profile.habits.find((h) => h.questionKey === key)?.answer ?? null;
+    // Les réponses d'habitudes sont stockées jointes : on les redécoupe pour
+    // pouvoir recocher les cases en cas de retour en arrière.
+    const answer = profile.habits.find((h) => h.questionKey === key)?.answer;
+    return answer ? answer.split('. ').filter(Boolean) : null;
   }
   if (field === 'skills') {
-    return profile.skills.map((s) => `${s.skill.slug}:${s.level}`);
+    return profile.skills.map((s) => s.skill.slug);
   }
   if (field === 'interests') {
     return profile.interests.map((i) => i.interest.slug);

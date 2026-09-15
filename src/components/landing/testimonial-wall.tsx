@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CtaArrow } from '@/components/landing/cta-arrow';
 
 /**
  * Mur de témoignages (pattern 9) : colonnes défilant verticalement à vitesses
@@ -29,9 +30,10 @@ export function TestimonialWall({ entries }: { entries: WallEntry[] }) {
           </p>
           <Link
             href="/inscription"
-            className="mt-8 inline-flex h-12 items-center rounded-xl border border-white/20 px-6 text-sm text-white transition-colors hover:border-acier hover:text-acier"
+            className="group mt-8 inline-flex h-12 items-center gap-2.5 rounded-xl border border-white/20 px-6 text-sm text-white transition-colors hover:border-acier hover:text-acier"
           >
-            Commencer mon aventure
+            Trouver mon business
+            <CtaArrow />
           </Link>
         </div>
       </section>

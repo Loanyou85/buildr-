@@ -65,7 +65,7 @@ test.describe('Le chemin, de bout en bout', () => {
     await page.goto('/');
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Construis-le');
-    await expect(page.getByRole('link', { name: 'Commencer mon aventure' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Trouver mon business' }).first()).toBeVisible();
 
     // Garde-fou n° 1 : sans aventure publiée, le mur reste vide et le dit.
     await expect(page.getByText('Aucune aventure partagée pour l’instant.')).toBeVisible();
@@ -183,8 +183,9 @@ test.describe('Le chemin, de bout en bout', () => {
     await page.goto('/onboarding?q=0');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Quel âge as-tu');
 
-    await page.locator('input[name="value"]').fill('14');
-    await page.getByRole('button', { name: 'Continuer' }).click();
+    // Tout se coche : aucun champ à saisir dans le tunnel.
+    await expect(page.locator('input[type="text"], input[type="number"]')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Moins de 16 ans' }).click();
 
     await page.waitForURL('**/trop-jeune');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('16 ans');
@@ -199,21 +200,21 @@ test.describe('Le chemin, de bout en bout', () => {
     await signIn(page, email);
 
     await page.goto('/onboarding?q=0');
-    await page.locator('input[name="value"]').fill('27');
-    await page.getByRole('button', { name: 'Continuer' }).click();
-
+    // Un clic répond et enchaîne : pas de bouton « Continuer » à chercher.
+    await page.getByRole('button', { name: '25 à 34 ans' }).click();
     await page.waitForURL('**/onboarding?q=1');
-    await page.getByRole('radio').first().click();
-    await page.getByRole('button', { name: 'Continuer' }).click();
+
+    await page.getByRole('button', { name: 'Salarié' }).click();
     await page.waitForURL('**/onboarding?q=2');
 
     const profile = await db.profile.findUniqueOrThrow({ where: { userId: user.id } });
-    expect(profile.age).toBe(27);
+    expect(profile.age).toBe(29);
+    expect(profile.status).toBe('employed');
     expect(profile.onboardingStep).toBe('status');
 
     // Reprise : sans paramètre, on repart à la question suivante.
     await page.goto('/onboarding');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Tu habites où');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Tu vis plutôt où');
 
     await page.goto('about:blank');
     await cleanupUser(email);

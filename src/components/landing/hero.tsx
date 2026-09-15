@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { motion, useReducedMotion } from 'motion/react';
 import { PhoneMockup } from '@/components/landing/phone-mockup';
 import { FloatingCards } from '@/components/landing/floating-cards';
+import { CtaArrow } from '@/components/landing/cta-arrow';
 
 /**
  * Hero orchestré (section 5.1, pattern 1) : un seul moment de chargement,
@@ -64,9 +65,10 @@ export function Hero() {
             <motion.div {...appear(3)} className="mt-10 flex flex-wrap items-center gap-4">
               <Link
                 href="/inscription"
-                className="inline-flex h-13 items-center rounded-xl bg-signal px-7 text-base font-medium text-white transition-colors hover:bg-[#f06f12]"
+                className="group inline-flex h-13 items-center gap-2.5 rounded-xl bg-signal px-7 text-base font-medium text-white transition-colors hover:bg-[#f06f12]"
               >
-                Commencer mon aventure
+                Trouver mon business
+                <CtaArrow />
               </Link>
               <Link
                 href="#chemin"

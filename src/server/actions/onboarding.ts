@@ -40,67 +40,81 @@ export async function saveAnswer(formData: FormData): Promise<void> {
   const data: Prisma.ProfileUpdateInput = { onboardingStep: key };
 
   switch (question.kind) {
-    case 'number': {
-      const value = Number(raw[0]);
-      if (Number.isFinite(value)) {
-        Object.assign(data, { [question.field]: Math.round(value) });
-      }
-      break;
-    }
     case 'choice': {
-      if (raw[0]) Object.assign(data, { [question.field]: raw[0] });
+      const raw0 = raw[0];
+      if (raw0 === undefined) break;
+
+      // Les valeurs numériques arrivent comme libellés de tranche : la tranche
+      // porte un nombre représentatif, c'est lui qu'on enregistre.
+      if (question.numeric) {
+        const value = Number(raw0);
+        if (!Number.isFinite(value)) break;
+
+        if (question.field === 'skillLevel') {
+          // Un seul niveau déclaré pour toutes les compétences cochées : une
+          // question au lieu d'une par compétence.
+          await db.userSkill.updateMany({
+            where: { profileId: profile.id },
+            data: { level: Math.max(0, Math.min(5, Math.round(value))) },
+          });
+          break;
+        }
+
+        Object.assign(data, { [question.field]: Math.round(value) });
+        break;
+      }
+
+      if (raw0 === 'true' || raw0 === 'false') {
+        Object.assign(data, { [question.field]: raw0 === 'true' });
+        break;
+      }
+
+      Object.assign(data, { [question.field]: raw0 });
       break;
     }
-    case 'boolean': {
-      Object.assign(data, { [question.field]: raw[0] === 'true' });
-      break;
-    }
-    case 'text': {
+
+    case 'multi': {
       if (question.field === 'habit') {
-        const answer = raw[0] ?? '';
+        // Les cases cochées forment la réponse : c'est ce texte que l'IA — ou
+        // l'heuristique locale — analyse pour en tirer des signaux.
+        const answer = raw.join('. ');
         if (answer.trim().length > 0) {
           await db.habitAnswer.upsert({
             where: { profileId_questionKey: { profileId: profile.id, questionKey: question.key } },
             update: { answer },
             create: { profileId: profile.id, questionKey: question.key, answer },
           });
+        } else {
+          await db.habitAnswer.deleteMany({
+            where: { profileId: profile.id, questionKey: question.key },
+          });
         }
-      } else if (raw[0]) {
-        Object.assign(data, { [question.field]: raw[0] });
+        break;
       }
-      break;
-    }
-    case 'skills': {
-      const levels = raw
-        .map((entry) => entry.split(':'))
-        .filter((parts): parts is [string, string] => parts.length === 2)
-        .map(([slug, level]) => ({ slug, level: Math.max(0, Math.min(5, Number(level) || 0)) }));
-
-      const skills = await db.skill.findMany({ where: { slug: { in: levels.map((l) => l.slug) } } });
-      await db.userSkill.deleteMany({ where: { profileId: profile.id } });
-      if (skills.length > 0) {
-        await db.userSkill.createMany({
-          data: skills.map((skill) => ({
-            profileId: profile.id,
-            skillId: skill.id,
-            level: levels.find((l) => l.slug === skill.slug)?.level ?? 3,
-          })),
-        });
-      }
-      break;
-    }
-    case 'interests': {
-      const interests = await db.interest.findMany({ where: { slug: { in: raw } } });
-      await db.userInterest.deleteMany({ where: { profileId: profile.id } });
-      if (interests.length > 0) {
-        await db.userInterest.createMany({
-          data: interests.map((interest) => ({ profileId: profile.id, interestId: interest.id })),
-        });
-      }
-      break;
-    }
-    case 'multi': {
       Object.assign(data, { [question.field]: raw });
+      break;
+    }
+
+    case 'skills': {
+      const found = await db.skill.findMany({ where: { slug: { in: raw } } });
+      await db.userSkill.deleteMany({ where: { profileId: profile.id } });
+      if (found.length > 0) {
+        await db.userSkill.createMany({
+          // Niveau par défaut jusqu'à la question suivante, qui l'ajuste.
+          data: found.map((skill) => ({ profileId: profile.id, skillId: skill.id, level: 3 })),
+        });
+      }
+      break;
+    }
+
+    case 'interests': {
+      const found = await db.interest.findMany({ where: { slug: { in: raw } } });
+      await db.userInterest.deleteMany({ where: { profileId: profile.id } });
+      if (found.length > 0) {
+        await db.userInterest.createMany({
+          data: found.map((interest) => ({ profileId: profile.id, interestId: interest.id })),
+        });
+      }
       break;
     }
   }

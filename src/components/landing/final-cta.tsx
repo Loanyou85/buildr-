@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CtaArrow } from '@/components/landing/cta-arrow';
 
 /** Bloc CTA final (pattern 11) : fond sombre, glow, trois badges sous le bouton. */
 export function FinalCta() {
@@ -19,9 +20,10 @@ export function FinalCta() {
 
         <Link
           href="/inscription"
-          className="mt-10 inline-flex h-13 items-center rounded-xl bg-signal px-8 text-base font-medium text-white transition-colors hover:bg-[#f06f12]"
+          className="group mt-10 inline-flex h-13 items-center gap-2.5 rounded-xl bg-signal px-8 text-base font-medium text-white transition-colors hover:bg-[#f06f12]"
         >
-          Commencer mon aventure
+          Trouver mon business
+          <CtaArrow />
         </Link>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-white/50">
