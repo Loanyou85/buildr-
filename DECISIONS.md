@@ -94,9 +94,31 @@ insertions par lots.** Sans le verrou, deux exécutions simultanées — un
 déploiement lent que l'utilisateur relance — violent une contrainte d'unicité.
 Sans les lots, plusieurs centaines de lignes dépassent le délai d'exécution.
 
-**La migration vers ce schéma nettoie les anciennes valeurs d'offre avant de
-changer l'énumération.** Sans ça, le transtypage échoue sur une base déjà semée
-avec les anciennes offres, et le déploiement s'arrête au milieu.
+**La migration vers ce schéma repart d'une table rase.** Une première version
+transformait l'existant : elle ajoutait des colonnes obligatoires — `Journey.slug`,
+`Phase.key` — à des tables déjà remplies. Ça passe sur une base vide, et ça
+échoue sur une base semée : « column slug of relation Journey contains null
+values ». Pire, le fichier de migration contient des blocs `BEGIN`/`COMMIT`
+explicites pour les changements d'énumération, donc l'échec laisse la base à
+moitié transformée et Prisma refuse ensuite d'appliquer quoi que ce soit (P3009).
+
+Un seul déploiement raté suffit à bloquer tous les suivants. La forme retenue
+— supprimer toutes les tables et toutes les énumérations sauf le journal de
+migrations, puis créer le schéma complet — est la seule qui aboutisse depuis
+les trois états possibles : base neuve, base de l'ancien produit, base restée
+en échec. Les trois sont vérifiés, en reconstituant chaque état localement.
+
+C'est acceptable ici parce que le produit change entièrement et que l'ancien
+contenu n'a pas d'équivalent. Ça ne le serait pas sur une base avec de vrais
+utilisateurs.
+
+**`scripts/debloquer-migration.ts` déclare annulée la migration restée en
+échec, et elle seule, nommée en toutes lettres.** Sans ce déblocage, il faut
+aller le faire à la main sur la base de production, ce qui n'est pas à la
+portée de quelqu'un qui ne code pas. Le script ne touchera jamais à une
+migration future : débloquer automatiquement n'importe quel échec serait
+dangereux, puisque rien ne garantit qu'une migration interrompue puisse être
+rejouée sans risque.
 
 **Le seed tourne pendant le build.** Le contenu — trente archétypes, treize
 phases, quarante gabarits de prompts, vingt-sept motifs d'erreur — n'est pas

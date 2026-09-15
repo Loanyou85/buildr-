@@ -42,6 +42,12 @@ contenu.
 Pour réécrire le contenu après avoir modifié le parcours ou les gabarits de
 prompts : `npm run db:seed -- --force`.
 
+La bascule depuis l'ancien produit supprime toutes les tables sauf le journal
+de migrations, puis recrée le schéma. C'est délibéré : l'ancien contenu n'a pas
+d'équivalent, et c'est la seule forme qui aboutisse aussi bien sur une base
+neuve que sur une base restée en échec. Les comptes existants sont donc à
+recréer.
+
 ## Commandes
 
 ```bash
