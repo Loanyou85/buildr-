@@ -147,3 +147,18 @@ compte plus que la décision.
   compétences. L'écran le dit explicitement plutôt que de laisser croire à un blocage.
 - **L'objectif de revenu se règle avec une barre**, de 0 à 50 000 €. Le champ reste non
   contrôlé : il s'envoie même sans JavaScript, seul l'affichage du montant en dépend.
+
+## Garantie
+
+- **Une garantie de remboursement porte sur le produit, jamais sur un revenu.** Le texte
+  dit ce qui se passe s'il n'y a pas de revenu ; il ne laisse à aucun moment entendre qu'il y
+  en aura un. Six tests passent l'intégralité du texte au garde-fou n° 2 et vérifient qu'aucune
+  formule de gain attendu n'y figure.
+- **Les conditions sont sur le même écran que la promesse.** Une garantie dont les conditions
+  attendent les mentions légales n'est pas une garantie, c'est un argument de vente. Qui,
+  à partir de quand, ce qu'on demande, ce qu'on ne demande pas, comment demander, sous quel
+  délai : un test échoue si l'une de ces réponses disparaît.
+- **Elle s'ajoute aux droits légaux**, mention obligatoire, vérifiée par un test.
+- **Aucun justificatif comptable n'est exigé.** Demander une preuve de non-revenu serait à la
+  fois invérifiable et vexant ; on demande en revanche d'avoir réellement suivi le parcours
+  jusqu'à la prospection, sans quoi il n'y a rien à juger.

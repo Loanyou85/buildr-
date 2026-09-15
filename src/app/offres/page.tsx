@@ -5,6 +5,7 @@ import { db } from '@/server/db';
 import { OFFERS, offerFor } from '@/lib/offers';
 import { OfferCards } from '@/components/app/offer-cards';
 import { stripeMode } from '@/server/stripe';
+import { GUARANTEE_DAYS, GUARANTEE_PROMISE } from '@/lib/guarantee';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,7 +87,15 @@ export default async function OffersPage({
 
         <OfferCards offers={OFFERS} currentPlan={subscription?.plan ?? 'free'} />
 
-        <p className="prose-nexteo mt-10 text-sm text-beton-600">
+        <p className="prose-nexteo mt-8 rounded-card border border-niveau/40 bg-niveau-50 p-4 text-sm text-encre">
+          <strong className="font-medium">Garantie {GUARANTEE_DAYS} jours.</strong> {GUARANTEE_PROMISE}{' '}
+          <Link href="/garantie" className="text-acier underline-offset-4 hover:underline">
+            Voir les conditions
+          </Link>
+          .
+        </p>
+
+        <p className="prose-nexteo mt-6 text-sm text-beton-600">
           Sans engagement, résiliable à tout moment. Ta progression et tes données restent les tiennes,
           exportables et supprimables depuis{' '}
           <Link href="/app/compte" className="text-acier underline-offset-4 hover:underline">

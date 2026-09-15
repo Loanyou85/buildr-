@@ -82,7 +82,7 @@ export function AnalysisReveal({
           ) : null}
 
           <Link
-            href="/offres"
+            href="/garantie"
             tabIndex={done ? 0 : -1}
             className="group mt-8 inline-flex h-13 items-center gap-2.5 rounded-xl bg-signal px-7 text-base font-medium text-white transition-colors hover:bg-[#f06f12]"
           >

@@ -106,6 +106,22 @@ test.describe('Le chemin, de bout en bout', () => {
 
     await page.getByRole('link', { name: 'Voir mon parcours' }).click();
 
+    // --- La garantie, avant de parler d'argent ---
+    await page.waitForURL('**/garantie**');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('remboursé');
+    // Les conditions sont sur le même écran que la promesse, pas ailleurs.
+    await expect(page.getByText('Pour qui')).toBeVisible();
+    await expect(page.getByText('Comment demander')).toBeVisible();
+    await expect(page.getByText('Sous quel délai')).toBeVisible();
+    await expect(page.getByText(/ne s’y substitue pas/)).toBeVisible();
+
+    const garantie = (await page.locator('body').innerText()).toLowerCase();
+    for (const promesse of ['tu vas gagner', 'revenus garantis', 'deviens riche']) {
+      expect(garantie, promesse).not.toContain(promesse);
+    }
+
+    await page.getByRole('link', { name: 'Voir les offres' }).click();
+
     // --- Les offres ---
     await page.waitForURL('**/offres**');
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Jusqu’où veux-tu aller');
