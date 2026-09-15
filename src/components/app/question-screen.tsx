@@ -123,7 +123,7 @@ export function QuestionScreen({
             <input type="hidden" name="index" value={index - 1} />
             <button
               type="submit"
-              className="text-sm text-beton-600 underline-offset-4 hover:text-encre hover:underline"
+              className="inline-flex min-h-11 items-center text-sm text-beton-600 underline-offset-4 hover:text-encre hover:underline"
             >
               ← Revenir à la question précédente
             </button>

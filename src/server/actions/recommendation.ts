@@ -125,9 +125,9 @@ export async function acceptRecommendation(formData: FormData): Promise<void> {
   }
 
   revalidatePath('/app');
-  // Le parcours existe : on montre d'abord ce qui vient d'être calculé, puis
-  // les offres.
-  redirect('/analyse');
+  // Trois actions avant le paywall : les questions, le diagnostic, la
+  // garantie.
+  redirect('/garantie');
 }
 
 export async function rejectRecommendation(formData: FormData): Promise<void> {

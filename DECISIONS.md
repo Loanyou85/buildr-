@@ -162,3 +162,22 @@ compte plus que la décision.
 - **Aucun justificatif comptable n'est exigé.** Demander une preuve de non-revenu serait à la
   fois invérifiable et vexant ; on demande en revanche d'avoir réellement suivi le parcours
   jusqu'à la prospection, sans quoi il n'y a rien à juger.
+
+## Tunnel court et mobile
+
+- **Huit questions, choisies sur ce qu'elles décident.** Statut, ville et niveau d'études
+  n'entraient dans aucun calcul du moteur : ils sont partis sans rien coûter. Les sept champs
+  qui éliminent une activité — budget, temps, visage, contenu, vente, contact, terrain — sont
+  tous conservés, regroupés dans une seule question à cocher. Une case décochée vaut un refus
+  explicite, pas une absence de réponse.
+- **Deux champs se déduisent au lieu de coûter une question** : le temps quotidien découpe la
+  semaine sur cinq jours, le budget mensuel s'estime au dixième du budget de départ. Les
+  laisser vides pénaliserait systématiquement les activités à acquisition payante.
+- **Trois actions avant le paywall** : les questions, le diagnostic, la garantie. L'écran
+  d'analyse est devenu un bandeau en tête du diagnostic — le chiffre arrive au moment où il
+  sert, juste avant l'activité qu'il a servi à trouver, et c'est un écran de moins.
+- **Mobile d'abord, mesuré et non supposé.** Aucun débordement horizontal sur aucun écran ;
+  le titre de la landing passait sur trois lignes et repoussait le bouton hors du premier
+  écran, il tient maintenant sur deux ; plus aucune cible de moins de 40 px, sauf les liens à
+  l'intérieur d'un paragraphe, qu'on n'agrandit pas sans casser le texte. Les cartes
+  flottantes, coupées par le bord de l'écran, sont masquées sous 640 px.

@@ -26,7 +26,7 @@ export function Hero() {
         };
 
   return (
-    <section className="relative overflow-hidden bg-plan-900 pb-24 pt-20 text-white sm:pb-32 sm:pt-28">
+    <section className="relative overflow-hidden bg-plan-900 pb-16 pt-24 text-white sm:pb-32 sm:pt-28">
       {/* Glows radiaux générés en CSS, pas en image (pattern 2). */}
       <div
         className="glow-acier pointer-events-none absolute left-1/2 top-[-10%] size-[720px] -translate-x-1/2"
@@ -50,35 +50,35 @@ export function Hero() {
 
             <motion.h1
               {...appear(1)}
-              className="mt-6 font-display text-4xl font-extrabold leading-[1.02] tracking-[-0.02em]"
+              className="mt-5 font-display text-[2.25rem] font-extrabold leading-[1.06] tracking-[-0.02em] sm:mt-6 sm:text-4xl sm:leading-[1.02]"
             >
               Ton business.
               <br />
               Construis-le.
             </motion.h1>
 
-            <motion.p {...appear(2)} className="prose-nexteo mt-6 text-lg text-white/70">
+            <motion.p {...appear(2)} className="prose-nexteo mt-5 text-base text-white/70 sm:mt-6 sm:text-lg">
               Découvre l’activité qui te correspond, puis suis un parcours étape par étape pour la
               construire.
             </motion.p>
 
-            <motion.div {...appear(3)} className="mt-10 flex flex-wrap items-center gap-4">
+            <motion.div {...appear(3)} className="mt-8 flex flex-wrap items-center gap-4 sm:mt-10">
               <Link
                 href="/inscription"
-                className="group inline-flex h-13 items-center gap-2.5 rounded-xl bg-signal px-7 text-base font-medium text-white transition-colors hover:bg-[#f06f12]"
+                className="group inline-flex h-13 w-full items-center justify-center gap-2.5 rounded-xl bg-signal px-7 text-base font-medium text-white transition-colors hover:bg-[#f06f12] sm:w-auto sm:justify-start"
               >
                 Trouver mon business
                 <CtaArrow />
               </Link>
               <Link
                 href="#chemin"
-                className="text-base text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline"
+                className="inline-flex min-h-11 w-full items-center justify-center text-base text-white/70 underline-offset-4 transition-colors hover:text-white hover:underline sm:w-auto"
               >
                 Découvrir les parcours
               </Link>
             </motion.div>
 
-            <motion.p {...appear(4)} className="mt-6 text-sm text-white/50">
+            <motion.p {...appear(4)} className="mt-6 text-center text-sm text-white/50 sm:text-left">
               Gratuit pour le diagnostic et les premières étapes. Aucune carte bancaire.
             </motion.p>
           </div>

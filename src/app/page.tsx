@@ -55,12 +55,15 @@ export default async function LandingPage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <Logo className="text-white" />
           <nav className="flex items-center gap-5">
-            <Link href="/aventures" className="text-sm text-white/60 transition-colors hover:text-white">
+            <Link
+              href="/aventures"
+              className="hidden min-h-11 items-center px-2 text-sm text-white/60 transition-colors hover:text-white sm:inline-flex"
+            >
               Les aventures
             </Link>
             <Link
               href="/connexion"
-              className="rounded-xl border border-white/20 px-4 py-2 text-sm text-white transition-colors hover:border-acier hover:text-acier"
+              className="inline-flex min-h-11 items-center rounded-xl border border-white/20 px-4 text-sm text-white transition-colors hover:border-acier hover:text-acier"
             >
               Se connecter
             </Link>

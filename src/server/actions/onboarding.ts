@@ -61,7 +61,21 @@ export async function saveAnswer(formData: FormData): Promise<void> {
           break;
         }
 
-        Object.assign(data, { [question.field]: Math.round(value) });
+        const rounded = Math.round(value);
+        Object.assign(data, { [question.field]: rounded });
+
+        /*
+         * Deux champs se déduisent plutôt que de coûter une question :
+         * le temps quotidien découpe la semaine sur cinq jours, et le budget
+         * mensuel s'estime au dixième du budget de départ. Les laisser à zéro
+         * pénaliserait systématiquement les activités à acquisition payante.
+         */
+        if (question.field === 'hoursPerWeek') {
+          Object.assign(data, { hoursPerDay: Math.max(1, Math.round(rounded / 5)) });
+        }
+        if (question.field === 'initialBudget') {
+          Object.assign(data, { monthlyBudget: Math.round(rounded / 10 / 25) * 25 });
+        }
         break;
       }
 
@@ -75,6 +89,25 @@ export async function saveAnswer(formData: FormData): Promise<void> {
     }
 
     case 'multi': {
+      if (question.field === 'readiness') {
+        const checked = new Set(raw);
+        // Une case décochée vaut un refus explicite, pas une absence de
+        // réponse : c'est ce qui fait fonctionner les contraintes dures.
+        Object.assign(data, {
+          showsFace: checked.has('showsFace'),
+          createsContent: checked.has('createsContent'),
+          likesStrangers: checked.has('likesStrangers'),
+          likesSelling: checked.has('likesSelling'),
+          likesCreating: checked.has('likesCreating'),
+          likesAnalyzing: checked.has('likesAnalyzing'),
+          likesRepetition: checked.has('likesRepetition'),
+          // Refuser le déplacement, c'est vouloir travailler à distance —
+          // et cela écarte les activités qui exigent du terrain.
+          workMode: checked.has('localWork') ? 'hybrid' : 'remote',
+        });
+        break;
+      }
+
       if (question.field === 'habit') {
         // Les cases cochées forment la réponse : c'est ce texte que l'IA — ou
         // l'heuristique locale — analyse pour en tirer des signaux.

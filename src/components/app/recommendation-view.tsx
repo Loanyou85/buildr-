@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { acceptRecommendation, rejectRecommendation } from '@/server/actions/recommendation';
+import { AnalysisStrip } from '@/components/app/analysis-strip';
 
 interface Primary {
   id: string;
@@ -22,6 +23,7 @@ interface Primary {
  * faits, puis une seule action (section 8.3). L'orange n'apparaît qu'une fois.
  */
 export function RecommendationView({
+  stats,
   primary,
   facts,
   alternatives,
@@ -30,6 +32,7 @@ export function RecommendationView({
   askToRevisit,
   error,
 }: {
+  stats: Array<{ value: number; label: string }>;
   primary: Primary;
   facts: Array<{ label: string; value: string }>;
   alternatives: Array<{ id: string; name: string; summary: string; score: number }>;
@@ -48,8 +51,13 @@ export function RecommendationView({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: reduced ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
       >
-        <p className="text-sm text-beton-600">Ton business est prêt.</p>
+        <AnalysisStrip stats={stats} />
+
+        <p className="mt-10 text-sm text-beton-600">Ton diagnostic est prêt.</p>
         <h1 className="mt-2 text-3xl">{primary.name}</h1>
+        <p className="prose-nexteo mt-3 text-base text-beton-600">
+          Une activité à ton image, avec laquelle aller chercher tes premiers revenus.
+        </p>
         <p className="prose-nexteo mt-4 text-lg text-encre">{primary.summary}</p>
       </motion.div>
 
@@ -117,7 +125,7 @@ export function RecommendationView({
             <button
               type="button"
               onClick={() => setRejecting(true)}
-              className="text-sm text-beton-600 underline-offset-4 hover:text-encre hover:underline"
+              className="inline-flex min-h-11 items-center text-sm text-beton-600 underline-offset-4 hover:text-encre hover:underline"
             >
               Cette activité ne me correspond pas
             </button>

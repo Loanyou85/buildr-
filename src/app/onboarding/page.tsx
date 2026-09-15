@@ -64,6 +64,23 @@ function readCurrentValue(
 ): string | string[] | null {
   if (!profile) return null;
 
+  if (field === 'readiness') {
+    const checked: string[] = [];
+    for (const key of [
+      'showsFace',
+      'createsContent',
+      'likesStrangers',
+      'likesSelling',
+      'likesCreating',
+      'likesAnalyzing',
+      'likesRepetition',
+    ] as const) {
+      if (profile[key]) checked.push(key);
+    }
+    if (profile.workMode && profile.workMode !== 'remote') checked.push('localWork');
+    return checked;
+  }
+
   if (field === 'habit') {
     // Les réponses d'habitudes sont stockées jointes : on les redécoupe pour
     // pouvoir recocher les cases en cas de retour en arrière.

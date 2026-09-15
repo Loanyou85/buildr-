@@ -15,7 +15,9 @@ export function FloatingCards() {
   const yDown = useTransform(scrollYProgress, [0, 1], [-24, 24]);
 
   return (
-    <div ref={ref} className="pointer-events-none absolute inset-0" aria-hidden>
+    // Masquées sur téléphone : décalées hors du cadre, elles s'y retrouvaient
+    // coupées par le bord de l'écran. Le mockup seul suffit à cette largeur.
+    <div ref={ref} className="pointer-events-none absolute inset-0 hidden sm:block" aria-hidden>
       <motion.div
         style={reduced ? undefined : { y: yUp }}
         className="absolute -left-10 top-6 w-44 -rotate-3 rounded-2xl border border-white/15 bg-plan-700/70 px-4 py-3 backdrop-blur sm:-left-24 lg:-left-28"

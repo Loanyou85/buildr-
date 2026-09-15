@@ -7,6 +7,8 @@ import { MAX_REJECTIONS } from '@/lib/recommendation-policy';
 import { RecommendationView } from '@/components/app/recommendation-view';
 import { DIMENSION_LABELS, type DimensionScore } from '@/lib/matching/types';
 import { formatEuros } from '@/lib/utils';
+import { DIMENSIONS } from '@/lib/matching/types';
+import { TOTAL_QUESTIONS } from '@/lib/onboarding/questions';
 
 export const dynamic = 'force-dynamic';
 
@@ -86,8 +88,21 @@ export default async function RecommendationPage({
     },
   ];
 
+  // Chiffres du bandeau d'analyse : tous comptés en base, aucun écrit en dur.
+  const [businessCount, skillCount, interestCount] = await Promise.all([
+    db.businessModel.count({ where: { isActive: true } }),
+    db.userSkill.count({ where: { profile: { userId: session.user.id } } }),
+    db.userInterest.count({ where: { profile: { userId: session.user.id } } }),
+  ]);
+
   return (
     <RecommendationView
+      stats={[
+        { value: TOTAL_QUESTIONS, label: 'réponses analysées' },
+        { value: skillCount + interestCount, label: 'compétences et intérêts croisés' },
+        { value: businessCount, label: 'activités comparées' },
+        { value: DIMENSIONS.length, label: 'dimensions pesées' },
+      ]}
       primary={{
         id: primary.id,
         name: primary.businessModel.name,

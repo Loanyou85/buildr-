@@ -10,17 +10,17 @@ export function FinalCta() {
         aria-hidden
       />
       <div className="relative mx-auto max-w-2xl px-5 text-center">
-        <h2 className="font-display text-4xl font-extrabold leading-[1.02] tracking-[-0.02em]">
+        <h2 className="font-display text-[2.25rem] font-extrabold leading-[1.06] tracking-[-0.02em] sm:text-4xl sm:leading-[1.02]">
           Ton business. Construis-le.
         </h2>
-        <p className="prose-nexteo mx-auto mt-6 text-lg text-white/70">
+        <p className="prose-nexteo mx-auto mt-5 text-base text-white/70 sm:mt-6 sm:text-lg">
           Commence par le diagnostic. En une quinzaine de minutes, tu sauras quelle activité te
           correspond et quelle est ta première étape.
         </p>
 
         <Link
           href="/inscription"
-          className="group mt-10 inline-flex h-13 items-center gap-2.5 rounded-xl bg-signal px-8 text-base font-medium text-white transition-colors hover:bg-[#f06f12]"
+          className="group mt-9 inline-flex h-13 w-full items-center justify-center gap-2.5 rounded-xl bg-signal px-8 text-base font-medium text-white transition-colors hover:bg-[#f06f12] sm:mt-10 sm:w-auto"
         >
           Trouver mon business
           <CtaArrow />

@@ -68,7 +68,7 @@ export function Scrollytelling() {
         <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 px-5 lg:grid-cols-2">
           <div>
             <p className="text-sm text-white/50">La boucle du produit</p>
-            <h2 className="mt-4 font-display text-3xl font-extrabold leading-[1.08] tracking-[-0.02em]">
+            <h2 className="mt-4 font-display text-2xl font-extrabold leading-[1.12] tracking-[-0.02em] sm:text-3xl sm:leading-[1.08]">
               Tu montes, une étape à la fois.
             </h2>
 
@@ -79,7 +79,7 @@ export function Scrollytelling() {
                   type="button"
                   onClick={() => setActive(index)}
                   className={cn(
-                    'block w-full border-l-2 pl-5 text-left transition-colors',
+                    'block w-full border-l-2 py-2 pl-5 text-left transition-colors',
                     index === active ? 'border-signal' : 'border-white/15',
                   )}
                 >

@@ -85,26 +85,18 @@ test.describe('Le chemin, de bout en bout', () => {
 
     // --- Recommandation ---
     await page.goto('/recommandation');
-    await expect(page.getByText('Ton business est prêt.')).toBeVisible();
+    await expect(page.getByText('Ton diagnostic est prêt.')).toBeVisible();
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Agence UGC');
+    // Les chiffres de l'analyse sont sur le diagnostic, plus sur un écran à part.
+    await expect(page.getByText('activités comparées')).toBeVisible();
+    const diagnostic = await page.locator('body').innerText();
+    expect(diagnostic).not.toMatch(/\b1\s?200\b/);
     await expect(page.getByRole('heading', { name: 'Pourquoi cette activité te correspond' })).toBeVisible();
 
     // Une seule action en orange signal sur l'écran.
     await expect(page.locator('.bg-signal')).toHaveCount(1);
 
     await page.getByRole('button', { name: 'Commencer' }).click();
-
-    // --- L'écran d'analyse, avec des chiffres tous vérifiables ---
-    await page.waitForURL('**/analyse**');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Agence UGC');
-    await expect(page.getByText('activités comparées')).toBeVisible();
-    // Garde-fou n° 1 : aucun chiffre d'usage inventé tant qu'il n'est pas réel.
-    const analyse = await page.locator('body').innerText();
-    expect(analyse).not.toMatch(/\b1\s?200\b/);
-    expect(analyse).toMatch(/22 étapes/);
-    expect(analyse).toMatch(/166 actions/);
-
-    await page.getByRole('link', { name: 'Voir mon parcours' }).click();
 
     // --- La garantie, avant de parler d'argent ---
     await page.waitForURL('**/garantie**');
@@ -189,7 +181,7 @@ test.describe('Le chemin, de bout en bout', () => {
 
     await page.goto('/recommandation');
     await page.getByRole('button', { name: 'Commencer' }).click();
-    await page.waitForURL('**/analyse**');
+    await page.waitForURL('**/garantie**');
     await page.goto('/offres');
 
     await page.getByRole('button', { name: 'Choisir Parcours' }).click();
@@ -213,7 +205,7 @@ test.describe('Le chemin, de bout en bout', () => {
 
     await page.goto('/recommandation');
     await page.getByRole('button', { name: 'Commencer' }).click();
-    await page.waitForURL('**/analyse**');
+    await page.waitForURL('**/garantie**');
     await page.goto('/offres');
     await page.getByRole('button', { name: 'Commencer gratuitement' }).click();
     await page.waitForURL('**/app');
@@ -302,6 +294,57 @@ test.describe('Le chemin, de bout en bout', () => {
     await cleanupUser(email);
   });
 
+  test('une seule question alimente les sept contraintes qui éliminent', async ({ page }) => {
+    const email = 'e2e-contraintes@nexteo.test';
+    const user = await createAccount({ email });
+    await db.profile.create({ data: { userId: user.id, age: 29 } });
+    await signIn(page, email);
+
+    await page.goto(`/onboarding?q=${indexOfQuestion('readiness')}`);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('prêt à faire');
+
+    // On coche deux acceptations, on laisse le reste décoché.
+    await page.getByText('Apparaître à l’image').click();
+    await page.getByText('Contacter des inconnus').click();
+    await page.getByRole('button', { name: 'Continuer' }).click();
+    await page.waitForURL(`**/onboarding?q=${indexOfQuestion('readiness') + 1}`);
+
+    const profile = await db.profile.findUniqueOrThrow({ where: { userId: user.id } });
+    expect(profile.showsFace).toBe(true);
+    expect(profile.likesStrangers).toBe(true);
+    // Décoché vaut refus explicite : c'est ce qui écarte des activités.
+    expect(profile.createsContent).toBe(false);
+    expect(profile.likesSelling).toBe(false);
+    // Refuser le déplacement revient à vouloir travailler à distance.
+    expect(profile.workMode).toBe('remote');
+
+    await page.goto('about:blank');
+    await cleanupUser(email);
+  });
+
+  test('le temps et le budget mensuels se déduisent, sans question de plus', async ({ page }) => {
+    const email = 'e2e-derive@nexteo.test';
+    const user = await createAccount({ email });
+    await db.profile.create({ data: { userId: user.id, age: 29 } });
+    await signIn(page, email);
+
+    await page.goto(`/onboarding?q=${indexOfQuestion('hoursPerWeek')}`);
+    await page.getByRole('button', { name: '10 à 20 heures' }).click();
+    await page.waitForURL(`**/onboarding?q=${indexOfQuestion('hoursPerWeek') + 1}`);
+
+    await page.getByRole('button', { name: '300 à 1 000 €' }).click();
+    await page.waitForURL(`**/onboarding?q=${indexOfQuestion('initialBudget') + 1}`);
+
+    const profile = await db.profile.findUniqueOrThrow({ where: { userId: user.id } });
+    expect(profile.hoursPerWeek).toBe(15);
+    expect(profile.hoursPerDay).toBe(3);
+    expect(profile.initialBudget).toBe(600);
+    expect(profile.monthlyBudget).toBe(50);
+
+    await page.goto('about:blank');
+    await cleanupUser(email);
+  });
+
   test('un mineur de moins de 16 ans est refusé et son compte supprimé', async ({ page }) => {
     const email = 'e2e-mineur@nexteo.test';
     const user = await createAccount({ email });
@@ -331,17 +374,17 @@ test.describe('Le chemin, de bout en bout', () => {
     await page.getByRole('button', { name: '25 à 34 ans' }).click();
     await page.waitForURL('**/onboarding?q=1');
 
-    await page.getByRole('button', { name: 'Salarié' }).click();
-    await page.waitForURL('**/onboarding?q=2');
+    // Huit questions au total : le tunnel ne doit plus jamais s'allonger sans
+    // que ce soit une décision.
+    await expect(page.getByText('2 / 8')).toBeVisible();
 
     const profile = await db.profile.findUniqueOrThrow({ where: { userId: user.id } });
     expect(profile.age).toBe(29);
-    expect(profile.status).toBe('employed');
-    expect(profile.onboardingStep).toBe('status');
+    expect(profile.onboardingStep).toBe('age');
 
     // Reprise : sans paramètre, on repart à la question suivante.
     await page.goto('/onboarding');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Tu vis plutôt où');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('prêt à faire');
 
     await page.goto('about:blank');
     await cleanupUser(email);

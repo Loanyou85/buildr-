@@ -49,7 +49,7 @@ export function Faq() {
   return (
     <section className="bg-plan-900 py-24 text-white">
       <div className="mx-auto max-w-3xl px-5">
-        <h2 className="font-display text-3xl font-extrabold leading-[1.08] tracking-[-0.02em]">
+        <h2 className="font-display text-2xl font-extrabold leading-[1.12] tracking-[-0.02em] sm:text-3xl sm:leading-[1.08]">
           Les questions qu’on nous pose
         </h2>
 
