@@ -5,7 +5,7 @@ export function Card({ className, actif, ...props }: React.HTMLAttributes<HTMLDi
   return (
     <div
       className={cn(
-        'rounded-[--radius-card] border bg-nuit-800 p-4',
+        'rounded-card border bg-nuit-800 p-4',
         actif ? 'border-neo-500/30' : 'border-gris-700',
         className,
       )}

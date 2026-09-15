@@ -51,11 +51,13 @@ export default async function AccueilPage() {
         className="sticky top-0 z-40 border-b border-gris-700/60 bg-nuit-900/85 backdrop-blur"
         style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
       >
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
+        <div className="mx-auto flex h-[72px] max-w-5xl items-center justify-between gap-3 px-4">
           <Logo />
-          {/* Section 2.2 : aucun menu sur mobile. Un logo, un bouton. */}
-          <Button asChild taille="sm" variant="secondaire">
-            <Link href="/diagnostic">Créer</Link>
+          {/* Section 2.2 : aucun menu sur mobile. Un logo, un bouton — et ce
+              bouton sert à revenir, pas à commencer : commencer, c'est le
+              grand bouton du hero et celui de la barre du bas. */}
+          <Button asChild taille="md">
+            <Link href="/connexion">Se connecter</Link>
           </Button>
         </div>
       </header>
@@ -110,7 +112,7 @@ export default async function AccueilPage() {
             {PROMESSES.map((promesse, index) => (
               <Reveal key={promesse.titre} delay={index * 60} className={promesse.large ? 'md:col-span-2' : ''}>
                 <article
-                  className={`h-full rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-6 ${
+                  className={`h-full rounded-card border border-gris-700 bg-nuit-800 p-6 ${
                     promesse.large ? 'md:p-8' : ''
                   }`}
                 >
@@ -171,7 +173,7 @@ export default async function AccueilPage() {
           ) : (
             <ul className="mt-6 grid gap-4 md:grid-cols-2">
               {aventures.map((aventure) => (
-                <li key={aventure.slug} className="rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-5">
+                <li key={aventure.slug} className="rounded-card border border-gris-700 bg-nuit-800 p-5">
                   {aventure.isDemo ? (
                     <span className="mb-2 inline-block rounded-full border border-gris-700 px-3 py-1 text-xs text-gris-300">
                       Exemple

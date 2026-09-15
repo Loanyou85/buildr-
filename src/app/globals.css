@@ -49,9 +49,13 @@
   --text-2xl--line-height: 1.08;
   --text-3xl--line-height: 1.02;
 
-  /* Section 4.3 — formes */
+  /* Formes. Le cahier des charges prévoyait 12 px sur les boutons ; le
+     fondateur a demandé des coins nettement plus arrondis, façon gélule. Les
+     champs et les blocs gardent un rayon propre, sinon une zone de saisie sur
+     plusieurs lignes devient illisible. */
   --radius-card: 1rem;
-  --radius-bouton: 0.75rem;
+  --radius-bouton: 9999px;
+  --radius-champ: 0.875rem;
 
   /* Easing partagé — section 5 */
   --ease-nexteo: cubic-bezier(0.22, 1, 0.36, 1);

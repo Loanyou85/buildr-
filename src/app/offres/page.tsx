@@ -43,7 +43,7 @@ export default async function OffresPage({
 
         <Link
           href="/garantie"
-          className="mt-5 flex items-center justify-between gap-3 rounded-[--radius-card] border border-gris-700 bg-nuit-800 px-4 py-3"
+          className="mt-5 flex items-center justify-between gap-3 rounded-card border border-gris-700 bg-nuit-800 px-4 py-3"
         >
           <span>
             <span className="block text-sm font-medium text-white">{GUARANTEE_HEADLINE}</span>
@@ -57,14 +57,14 @@ export default async function OffresPage({
         </Link>
 
         {paiement === 'indisponible' ? (
-          <p className="mt-5 rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-4 text-sm text-gris-300">
+          <p className="mt-5 rounded-card border border-gris-700 bg-nuit-800 p-4 text-sm text-gris-300">
             Le paiement n’est pas encore branché sur ce site. Ton choix est enregistré,{' '}
             <strong className="text-white">aucun montant ne t’a été débité</strong> et aucun accès
             payant n’a été ouvert.
           </p>
         ) : null}
         {retour ? (
-          <p className="mt-5 rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-4 text-sm text-gris-300">
+          <p className="mt-5 rounded-card border border-gris-700 bg-nuit-800 p-4 text-sm text-gris-300">
             Tu as quitté le paiement. Rien n’a été débité.
           </p>
         ) : null}
@@ -107,7 +107,7 @@ export default async function OffresPage({
           ))}
         </div>
 
-        <section className="mt-8 rounded-[--radius-card] border border-dashed border-gris-700 p-5">
+        <section className="mt-8 rounded-card border border-dashed border-gris-700 p-5">
           <h2 className="text-sm font-bold text-white">Si tu ne prends rien, tu gardes</h2>
           <ul className="mt-3 space-y-1.5">
             {FREE_FEATURES.map((item) => (

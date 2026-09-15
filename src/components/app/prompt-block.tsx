@@ -62,7 +62,7 @@ export function PromptBlock({
   };
 
   return (
-    <article className="rounded-[--radius-card] border border-gris-700 bg-nuit-800/60 p-4">
+    <article className="rounded-card border border-gris-700 bg-nuit-800/60 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-bold text-white">
@@ -91,7 +91,7 @@ export function PromptBlock({
         >
           {copie ? 'Copié' : 'Copier'}
         </button>
-        <pre className="max-h-[320px] overflow-auto whitespace-pre-wrap break-words rounded-[--radius-bouton] border border-gris-700 bg-nuit-900 p-4 pr-24 font-mono text-[13px] leading-relaxed text-neo-100">
+        <pre className="max-h-[320px] overflow-auto whitespace-pre-wrap break-words rounded-champ border border-gris-700 bg-nuit-900 p-4 pr-24 font-mono text-[13px] leading-relaxed text-neo-100">
           {body}
         </pre>
       </div>

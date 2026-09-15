@@ -30,7 +30,7 @@ export default async function CheminPage() {
         <ProgressBar value={parcours.progressPercent} />
       </div>
 
-      <form action={choisirChemin} className="mt-6 rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-4">
+      <form action={choisirChemin} className="mt-6 rounded-card border border-gris-700 bg-nuit-800 p-4">
         <p className="text-sm font-bold text-white">Ton chemin technique</p>
         <p className="mt-1 text-xs text-gris-300">
           Les deux mènent au même endroit. Tu peux changer quand tu veux, rien n’est perdu.
@@ -43,7 +43,7 @@ export default async function CheminPage() {
               name="techPath"
               value={chemin}
               className={cn(
-                'tactile rounded-[--radius-bouton] border px-3 py-2 text-xs',
+                'tactile rounded-champ border px-3 py-2 text-xs',
                 parcours.techPath === chemin
                   ? 'border-neo-500 bg-neo-500/15 text-white'
                   : 'border-gris-700 text-gris-300',
@@ -82,7 +82,7 @@ export default async function CheminPage() {
                         <Link
                           href={`/app/etape/${step.id}`}
                           className={cn(
-                            'tactile flex items-center justify-between gap-3 rounded-[--radius-card] border px-4 py-3',
+                            'tactile flex items-center justify-between gap-3 rounded-card border px-4 py-3',
                             faite ? 'border-gris-700 bg-nuit-800/50' : 'border-neo-500/30 bg-nuit-800',
                           )}
                         >
@@ -97,7 +97,7 @@ export default async function CheminPage() {
                           {faite ? <Badge>Fait</Badge> : <span aria-hidden className="text-gris-300">→</span>}
                         </Link>
                       ) : (
-                        <div className="flex items-center justify-between gap-3 rounded-[--radius-card] border border-gris-700 px-4 py-3 opacity-60">
+                        <div className="flex items-center justify-between gap-3 rounded-card border border-gris-700 px-4 py-3 opacity-60">
                           <span className="text-sm text-gris-300">{step.title}</span>
                           <span className="text-xs text-gris-300">
                             {verrouilleeParOffre ? 'offre' : 'à venir'}

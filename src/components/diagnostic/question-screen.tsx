@@ -31,7 +31,7 @@ function ChoixUnique({ options }: { options: Choix[] }) {
             value={option.value}
             onClick={() => setChoisi(option.value)}
             className={cn(
-              'tactile flex w-full items-center justify-between gap-3 rounded-[--radius-card] border px-4 py-3.5 text-left transition-colors',
+              'tactile flex w-full items-center justify-between gap-3 rounded-card border px-4 py-3.5 text-left transition-colors',
               actif
                 ? 'border-neo-500/60 bg-neo-500/10'
                 : choisi
@@ -67,7 +67,7 @@ function ChoixUnique({ options }: { options: Choix[] }) {
  */
 function Case({ value, label, hint }: Choix) {
   return (
-    <label className="group tactile flex cursor-pointer items-center justify-between gap-3 rounded-[--radius-card] border border-gris-700 bg-nuit-800 px-4 py-3 transition-colors has-[:checked]:border-neo-500/60 has-[:checked]:bg-neo-500/10">
+    <label className="group tactile flex cursor-pointer items-center justify-between gap-3 rounded-card border border-gris-700 bg-nuit-800 px-4 py-3 transition-colors has-[:checked]:border-neo-500/60 has-[:checked]:bg-neo-500/10">
       <input type="checkbox" name="value" value={value} className="sr-only" />
       <span>
         <span className="block text-sm font-medium text-white">{label}</span>
@@ -100,7 +100,7 @@ function Competence({ value, label }: Choix) {
         onClick={suivant}
         aria-pressed={niveau > 0}
         className={cn(
-          'tactile flex w-full items-center justify-between gap-3 rounded-[--radius-card] border px-4 py-3 text-left transition-colors',
+          'tactile flex w-full items-center justify-between gap-3 rounded-card border px-4 py-3 text-left transition-colors',
           niveau === 0 && 'border-gris-700 bg-nuit-800',
           niveau === 3 && 'border-neo-500/40 bg-neo-500/10',
           niveau === 5 && 'border-neo-500 bg-neo-500/20',
@@ -135,7 +135,7 @@ function Curseur({ question }: { question: Question }) {
         step={question.step ?? 1}
         defaultValue={question.defaultValue ?? question.min ?? 0}
         onChange={(event) => setValeur(Number(event.currentTarget.value))}
-        className="h-11 w-full accent-[--color-neo-500]"
+        className="h-11 w-full accent-neo-500"
         aria-label={question.title}
       />
       <div className="mt-1 flex justify-between text-xs text-gris-300 tabular">

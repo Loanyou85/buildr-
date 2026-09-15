@@ -48,7 +48,7 @@ export function CustomPromptForm() {
       ) : null}
 
       {state.promptId ? (
-        <div className="mt-6 rounded-[--radius-card] border border-neo-500/30 bg-nuit-800 p-4">
+        <div className="mt-6 rounded-card border border-neo-500/30 bg-nuit-800 p-4">
           <p className="text-sm font-bold text-white">Ton prompt est prêt.</p>
           <p className="mt-1 text-xs text-gris-300">
             Il est ajouté à la fin de ton pack, cohérent avec ce que tu as déjà construit.

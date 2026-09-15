@@ -15,7 +15,7 @@ export default async function ConnexionPage({
   const { suite } = await searchParams;
   return (
     <>
-      <TopBar />
+      <TopBar sansAction />
       <main className="mx-auto max-w-md px-4 py-8">
         <h1 className="text-xl font-extrabold text-white">Content de te revoir.</h1>
         <div className="mt-8">

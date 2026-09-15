@@ -28,7 +28,7 @@ export function RepairPanel({ contexte }: { contexte: string }) {
   const [state, action] = useActionState<ReparationState, FormData>(demanderReparation, {});
 
   return (
-    <details className="rounded-[--radius-card] border border-gris-700 bg-nuit-800/60 p-4">
+    <details className="rounded-card border border-gris-700 bg-nuit-800/60 p-4">
       <summary className="tactile flex cursor-pointer list-none items-center justify-between text-sm font-bold text-white">
         Ça ne marche pas
         <span aria-hidden className="text-gris-300">
@@ -57,7 +57,7 @@ export function RepairPanel({ contexte }: { contexte: string }) {
       {state.reparation ? (
         <div className="mt-5 space-y-4">
           {state.reparation.motif ? (
-            <div className="rounded-[--radius-card] border border-gris-700 bg-nuit-900 p-4">
+            <div className="rounded-card border border-gris-700 bg-nuit-900 p-4">
               <Badge ton="neo">{state.reparation.motif.category}</Badge>
               <p className="mt-2 text-sm font-bold text-white">{state.reparation.motif.label}</p>
               <p className="mt-1 text-xs text-gris-300">{state.reparation.motif.explanation}</p>

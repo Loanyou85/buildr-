@@ -36,7 +36,7 @@ export function Faq() {
       {QUESTIONS.map((item) => (
         <details
           key={item.q}
-          className="group rounded-[--radius-card] border border-gris-700 bg-nuit-800 px-4"
+          className="group rounded-card border border-gris-700 bg-nuit-800 px-4"
         >
           <summary className="tactile flex cursor-pointer list-none items-center justify-between gap-4 py-4 text-sm font-medium text-white">
             {item.q}

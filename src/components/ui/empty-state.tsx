@@ -16,7 +16,7 @@ export function EmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn('rounded-[--radius-card] border border-dashed border-gris-700 p-6 text-center', className)}>
+    <div className={cn('rounded-card border border-dashed border-gris-700 p-6 text-center', className)}>
       <p className="text-base font-bold text-white">{title}</p>
       <p className="mx-auto mt-2 max-w-sm text-sm text-gris-300">{description}</p>
       {action ? <div className="mt-4 flex justify-center">{action}</div> : null}

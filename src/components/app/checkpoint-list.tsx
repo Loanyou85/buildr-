@@ -87,7 +87,7 @@ export function CheckpointList({ stepId, criteres }: { stepId: string; criteres:
               onClick={() => basculer(critere)}
               aria-pressed={critere.coche}
               className={cn(
-                'tactile flex w-full items-start gap-3 rounded-[--radius-card] border px-4 py-3 text-left transition-colors',
+                'tactile flex w-full items-start gap-3 rounded-card border px-4 py-3 text-left transition-colors',
                 critere.coche ? 'border-neo-500/50 bg-neo-500/10' : 'border-gris-700 bg-nuit-800',
               )}
             >

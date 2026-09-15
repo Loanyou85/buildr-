@@ -44,7 +44,7 @@ export function InscriptionForm({
       </Field>
 
       <label className="flex items-start gap-3 text-xs text-gris-300">
-        <input type="checkbox" name="consent" required className="mt-0.5 h-5 w-5 accent-[--color-neo-500]" />
+        <input type="checkbox" name="consent" required className="mt-0.5 h-5 w-5 accent-neo-500" />
         <span>
           J’accepte les conditions générales et la politique de confidentialité. Je peux exporter ou
           supprimer mes données à tout moment depuis mon compte.

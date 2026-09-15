@@ -32,7 +32,7 @@ export function Counters({ items }: { items: { value: number; label: string }[] 
   return (
     <div ref={ref} className="grid grid-cols-2 gap-4 sm:grid-cols-4">
       {items.map((item) => (
-        <div key={item.label} className="rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-4">
+        <div key={item.label} className="rounded-card border border-gris-700 bg-nuit-800 p-4">
           <Chiffre valeur={item.value} demarre={visible} />
           <p className="mt-1 text-xs text-gris-300">{item.label}</p>
         </div>

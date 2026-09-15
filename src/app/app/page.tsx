@@ -93,21 +93,21 @@ export default async function AujourdhuiPage({
       <section className="mt-10 grid gap-3">
         <Link
           href="/app/prompts"
-          className="tactile flex items-center justify-between rounded-[--radius-card] border border-gris-700 bg-nuit-800 px-4 py-3 text-sm text-white"
+          className="tactile flex items-center justify-between rounded-card border border-gris-700 bg-nuit-800 px-4 py-3 text-sm text-white"
         >
           Mes prompts
           <span aria-hidden className="text-gris-300">→</span>
         </Link>
         <Link
           href="/app/ajouter"
-          className="tactile flex items-center justify-between rounded-[--radius-card] border border-gris-700 bg-nuit-800 px-4 py-3 text-sm text-white"
+          className="tactile flex items-center justify-between rounded-card border border-gris-700 bg-nuit-800 px-4 py-3 text-sm text-white"
         >
           Ajouter quelque chose à mon SaaS
           <span aria-hidden className="text-gris-300">→</span>
         </Link>
         <Link
           href="/app/videos"
-          className="tactile flex items-center justify-between rounded-[--radius-card] border border-gris-700 bg-nuit-800 px-4 py-3 text-sm text-white"
+          className="tactile flex items-center justify-between rounded-card border border-gris-700 bg-nuit-800 px-4 py-3 text-sm text-white"
         >
           Mes trente vidéos
           <span aria-hidden className="text-gris-300">→</span>

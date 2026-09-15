@@ -79,6 +79,25 @@ moitié des visiteurs.
 l'anonyme.** Écraser ce que la personne avait déjà répondu serait pire que de
 perdre un diagnostic qu'elle vient de refaire.
 
+**Les rayons et les tailles de boutons s'écartent du cahier des charges.** La
+section 4.3 prévoyait 12 px sur les boutons ; le fondateur a demandé des coins
+nettement plus arrondis et des boutons plus grands. Les boutons sont donc en
+gélule et montent à 56 px en taille courante, 64 px en pleine largeur. Les
+champs de saisie et les blocs de prompt gardent un rayon à eux : une zone de
+texte sur plusieurs lignes en gélule devient illisible.
+
+**Les utilitaires de rayon passent par les noms générés, pas par des valeurs
+arbitraires.** `rounded-[--radius-card]` produit `border-radius: --radius-card`
+en Tailwind v4, une déclaration invalide que le navigateur jette en silence :
+pendant plusieurs jours, aucune carte et aucun bouton du site n'a été arrondi,
+sans le moindre message d'erreur. Comme les rayons sont déclarés dans `@theme`,
+Tailwind génère `rounded-card`, `rounded-bouton` et `rounded-champ` : ce sont
+ces noms-là qui sont utilisés. Même correction pour `accent-neo-500`.
+
+**Le bouton de l'en-tête est « Se connecter », pas « Créer ».** Commencer, c'est
+le grand bouton du hero et celui de la barre collée en bas — il y en a déjà
+deux. Le seul geste qui n'avait aucune porte, c'était revenir.
+
 **Les cases à cocher n'ont aucun état React.** L'apparence est pilotée en CSS
 par l'état de la case native. Une version contrôlée ne dessinait la coche
 qu'après l'hydratation, et un clic avant celle-ci était annulé : la case se

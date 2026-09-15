@@ -68,7 +68,7 @@ export default async function VideosPage() {
         {tournes} sur {scripts.length} tournés ou publiés.
       </p>
 
-      <p className="mt-4 rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-4 text-xs text-gris-300">
+      <p className="mt-4 rounded-card border border-gris-700 bg-nuit-800 p-4 text-xs text-gris-300">
         {MENTION_PARTENARIAT}
       </p>
 
@@ -81,7 +81,7 @@ export default async function VideosPage() {
             <details
               key={script.id}
               className={cn(
-                'rounded-[--radius-card] border bg-nuit-800 p-4',
+                'rounded-card border bg-nuit-800 p-4',
                 script.status === 'published' ? 'border-neo-500/30' : 'border-gris-700',
               )}
             >

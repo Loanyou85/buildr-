@@ -61,7 +61,7 @@ export function IdeaCard({ idea, principale }: { idea: IdeaView; principale?: bo
         <Badge>Premier euro vers la semaine {idea.timeToFirstEuro}</Badge>
       </div>
 
-      <section className="mt-5 rounded-[--radius-card] border border-gris-700 bg-nuit-900/60 p-4">
+      <section className="mt-5 rounded-card border border-gris-700 bg-nuit-900/60 p-4">
         <h3 className="text-sm font-bold text-white">Pourquoi elle sort pour toi</h3>
         {idea.rationale ? <p className="mt-2 text-sm text-gris-300">{idea.rationale}</p> : null}
         <ul className="mt-3 space-y-1.5">
@@ -99,7 +99,7 @@ export function IdeaCard({ idea, principale }: { idea: IdeaView; principale?: bo
               type="submit"
               name="raison"
               value={raison.value}
-              className="tactile w-full rounded-[--radius-bouton] border border-gris-700 px-4 py-3 text-left text-sm text-gris-300 hover:border-neo-500/30 hover:text-white"
+              className="tactile w-full rounded-champ border border-gris-700 px-4 py-3 text-left text-sm text-gris-300 hover:border-neo-500/30 hover:text-white"
             >
               {raison.label}
             </button>

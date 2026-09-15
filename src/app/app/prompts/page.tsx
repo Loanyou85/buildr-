@@ -129,7 +129,7 @@ export default async function PromptsPage({
       )}
 
       {caches > 0 ? (
-        <div className="mt-8 rounded-[--radius-card] border border-dashed border-gris-700 p-4">
+        <div className="mt-8 rounded-card border border-dashed border-gris-700 p-4">
           <p className="text-sm font-bold text-white">{caches} prompts de plus dans ton pack.</p>
           <p className="mt-1 text-xs text-gris-300">
             Données, comptes, cœur du produit, écrans, paiement, mise en ligne, page de vente,

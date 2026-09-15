@@ -96,7 +96,7 @@ export default async function EtapePage({ params }: { params: Promise<{ id: stri
         ) : null}
       </div>
 
-      <p className="mt-5 rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-4 text-sm text-gris-300">
+      <p className="mt-5 rounded-card border border-gris-700 bg-nuit-800 p-4 text-sm text-gris-300">
         <span className="text-white">Pourquoi cette étape.</span> {step.why}
       </p>
 
@@ -146,7 +146,7 @@ export default async function EtapePage({ params }: { params: Promise<{ id: stri
                         />
                       </div>
                     ) : action.promptTemplateSlug ? (
-                      <div className="mt-3 rounded-[--radius-card] border border-dashed border-gris-700 p-4 pl-9 text-xs text-gris-300">
+                      <div className="mt-3 rounded-card border border-dashed border-gris-700 p-4 pl-9 text-xs text-gris-300">
                         Ce prompt fait partie de ton pack.{' '}
                         <Link href="/app/prompts" className="text-neo-100 underline underline-offset-4">
                           Génère-le d’abord
@@ -170,7 +170,7 @@ export default async function EtapePage({ params }: { params: Promise<{ id: stri
         {peutReparer ? (
           <RepairPanel contexte={`étape ${step.number} — ${step.title}`} />
         ) : (
-          <div className="rounded-[--radius-card] border border-dashed border-gris-700 p-4">
+          <div className="rounded-card border border-dashed border-gris-700 p-4">
             <p className="text-sm font-bold text-white">Ça ne marche pas ?</p>
             <p className="mt-1 text-xs text-gris-300">
               Colle ton erreur, et le système te rend un prompt de réparation contextualisé avec ton

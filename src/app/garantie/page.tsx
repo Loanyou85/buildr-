@@ -34,7 +34,7 @@ export default function GarantiePage() {
           ))}
         </dl>
 
-        <p className="mt-8 rounded-[--radius-card] border border-gris-700 bg-nuit-800 p-4 text-xs text-gris-300">
+        <p className="mt-8 rounded-card border border-gris-700 bg-nuit-800 p-4 text-xs text-gris-300">
           {GUARANTEE_LEGAL_NOTE}
         </p>
 

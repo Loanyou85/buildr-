@@ -13,7 +13,7 @@ const LIGNES = [
 /** Comparatif (section 5.1.7), révélé ligne par ligne au défilement. */
 export function Comparison() {
   return (
-    <div className="overflow-hidden rounded-[--radius-card] border border-gris-700">
+    <div className="overflow-hidden rounded-card border border-gris-700">
       <div className="grid grid-cols-[1fr_1fr] gap-px bg-gris-700 text-xs sm:grid-cols-[1fr_1fr_1fr]">
         <div className="hidden bg-nuit-800 px-4 py-3 text-gris-300 sm:block" />
         <div className="bg-nuit-800 px-4 py-3 font-medium text-gris-300">Se débrouiller seul</div>

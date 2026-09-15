@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
  * Section 2.2 : 48 px de haut minimum, partout, sans exception.
  */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-[--radius-bouton] font-medium transition-[transform,background-color,border-color] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neo-400',
+  'inline-flex items-center justify-center gap-2 rounded-bouton font-semibold transition-[transform,background-color,border-color] duration-150 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neo-400',
   {
     variants: {
       variant: {
@@ -19,12 +19,13 @@ const buttonVariants = cva(
         danger: 'border border-gris-700 bg-nuit-800 text-white hover:border-red-500/40',
       },
       taille: {
-        // 48 px partout, sans exception (section 2.2) — y compris sur les
-        // boutons discrets : c'est une règle de zone tactile, pas de style.
-        sm: 'min-h-[48px] px-4 text-xs',
-        md: 'min-h-[48px] px-5 text-sm',
-        lg: 'min-h-[56px] px-6 text-base',
-        bloc: 'min-h-[56px] w-full px-6 text-base',
+        // 48 px est le plancher de zone tactile (section 2.2), jamais la
+        // cible : sur un écran de téléphone tenu à une main, un bouton
+        // d'action se vise sans regarder.
+        sm: 'min-h-[48px] px-5 text-sm',
+        md: 'min-h-[56px] px-7 text-base',
+        lg: 'min-h-[64px] px-8 text-lg',
+        bloc: 'min-h-[64px] w-full px-8 text-lg',
       },
     },
     defaultVariants: { variant: 'principal', taille: 'md' },

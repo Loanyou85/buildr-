@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
  * zooment tout seuls quand on tape dans le champ.
  */
 const base =
-  'w-full rounded-[--radius-bouton] border border-gris-700 bg-nuit-800 px-4 text-base text-white placeholder:text-gris-300/60 focus:border-neo-500/50 focus:outline-none';
+  'w-full rounded-champ border border-gris-700 bg-nuit-800 px-4 text-base text-white placeholder:text-gris-300/60 focus:border-neo-500/50 focus:outline-none';
 
 export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cn(base, 'min-h-[52px]', className)} {...props} />;
