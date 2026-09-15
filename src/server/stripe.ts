@@ -18,6 +18,23 @@ export function getStripe(): Stripe | null {
   return client;
 }
 
+export type StripeMode = 'absent' | 'test' | 'production';
+
+/**
+ * Mode réellement actif, déduit du préfixe de la clé secrète.
+ *
+ * C'est la seule source fiable : le tableau de bord se souvient du dernier
+ * interrupteur utilisé, pas de ce qui tourne en production. Laisser une clé de
+ * test en production est l'erreur la plus coûteuse du branchement — les vraies
+ * cartes sont refusées, et les cartes de test ouvrent l'accès gratuitement.
+ */
+export function stripeMode(): StripeMode {
+  const key = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!key) return 'absent';
+  if (key.startsWith('sk_test_') || key.startsWith('rk_test_')) return 'test';
+  return 'production';
+}
+
 /** Identifiant de tarif Stripe correspondant à une offre. */
 export function priceIdFor(plan: Plan): string | null {
   const byPlan: Partial<Record<Plan, string | undefined>> = {

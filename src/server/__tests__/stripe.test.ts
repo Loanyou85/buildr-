@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { planForPriceId, priceIdFor, stripeEnabled } from '../stripe';
+import { planForPriceId, priceIdFor, stripeEnabled, stripeMode } from '../stripe';
 
 const KEYS = ['STRIPE_SECRET_KEY', 'STRIPE_PRICE_PRO', 'STRIPE_PRICE_ILLIMITE'] as const;
 
@@ -43,5 +43,27 @@ describe('configuration Stripe', () => {
     expect(planForPriceId('price_inconnu')).toBeNull();
     expect(planForPriceId(null)).toBeNull();
     expect(planForPriceId(undefined)).toBeNull();
+  });
+});
+
+describe('mode réellement actif', () => {
+  it('se déduit du préfixe de la clé, pas de l’interrupteur du tableau de bord', () => {
+    process.env.STRIPE_SECRET_KEY = 'sk_test_51AbCdEf';
+    expect(stripeMode()).toBe('test');
+
+    process.env.STRIPE_SECRET_KEY = 'sk_live_51AbCdEf';
+    expect(stripeMode()).toBe('production');
+  });
+
+  it('reconnaît aussi une clé restreinte de test', () => {
+    process.env.STRIPE_SECRET_KEY = 'rk_test_51AbCdEf';
+    expect(stripeMode()).toBe('test');
+  });
+
+  it('signale l’absence de clé plutôt que de supposer la production', () => {
+    delete process.env.STRIPE_SECRET_KEY;
+    expect(stripeMode()).toBe('absent');
+    process.env.STRIPE_SECRET_KEY = '  ';
+    expect(stripeMode()).toBe('absent');
   });
 });

@@ -4,6 +4,7 @@ import { auth } from '@/server/auth';
 import { db } from '@/server/db';
 import { OFFERS, offerFor } from '@/lib/offers';
 import { OfferCards } from '@/components/app/offer-cards';
+import { stripeMode } from '@/server/stripe';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,7 @@ export default async function OffersPage({
     }),
   ]);
 
+  const mode = stripeMode();
   const businessName = userJourney?.journey.businessModel.name ?? null;
   const pending = offre ? offerFor(offre as never) : null;
 
@@ -46,6 +48,19 @@ export default async function OffersPage({
           Ton parcours est prêt. Tu peux commencer gratuitement et voir par toi-même, ou prendre le
           chemin complet tout de suite.
         </p>
+
+        {/*
+          Avertissement réservé à l'administrateur : un visiteur n'a rien à
+          faire de cette information, mais toi tu dois la voir avant d'annoncer
+          l'ouverture des paiements.
+        */}
+        {session.user.role === 'admin' && mode !== 'production' ? (
+          <p className="mt-6 rounded-card border border-signal/40 bg-signal-50 p-4 text-sm text-encre">
+            {mode === 'test'
+              ? 'Paiements en mode test : les cartes réelles seront refusées et les cartes de test ouvriront l’accès sans débit. Remplace STRIPE_SECRET_KEY par une clé sk_live_ pour encaisser pour de vrai.'
+              : 'Aucune clé Stripe configurée : choisir une offre payante enregistre l’intention sans rien débiter.'}
+          </p>
+        ) : null}
 
         {raison === 'plusieurs-parcours' ? (
           <p className="mt-6 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
