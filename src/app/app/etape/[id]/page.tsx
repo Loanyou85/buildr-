@@ -5,6 +5,7 @@ import { db } from '@/server/db';
 import { AppShell } from '@/components/app/app-shell';
 import { AssistantLauncher } from '@/components/app/assistant-launcher';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { CheckpointList } from '@/components/app/checkpoint-list';
 import { StepBody } from '@/components/app/step-body';
 import { MilestoneCelebration } from '@/components/app/milestone-celebration';
@@ -94,11 +95,14 @@ export default async function StepPage({
           <p className="text-lg text-encre">Cette étape fait partie du parcours complet</p>
           <p className="prose-nexteo mt-2 text-sm text-beton-600">
             Les {FREE_STEP_LIMIT} premières étapes sont accessibles librement. La suite du parcours, avec
-            ses scripts, ses templates et l’assistance sur chaque étape, fait partie de Nexteo Pro.
+            ses scripts, ses modèles et l’assistance sur chaque étape, fait partie de l’offre Parcours.
           </p>
           <p className="mt-4 text-sm text-beton-600">
             Tu gardes ta progression et tes {step.number - 1} étapes déjà ouvertes, quoi qu’il arrive.
           </p>
+          <Button asChild variant="signal" size="lg" className="mt-6">
+            <Link href="/offres">Voir les offres</Link>
+          </Button>
         </section>
       ) : (
         <>

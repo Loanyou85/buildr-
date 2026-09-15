@@ -15,12 +15,14 @@ export const FEATURES = {
   notifications: 'notifications.reminders',
   adventures: 'adventure.public',
   history: 'history.full',
+  multipleJourneys: 'journey.multiple',
+  journeyVariants: 'journey.variants',
+  unlimitedAssistant: 'assistant.unlimited',
 } as const;
 
 export type FeatureKey = (typeof FEATURES)[keyof typeof FEATURES];
 
-/** Nombre d'étapes lisibles intégralement en plan gratuit. */
-export const FREE_STEP_LIMIT = 3;
+export { FREE_STEP_LIMIT } from '@/lib/offers';
 
 export async function planFor(userId: string): Promise<Plan> {
   const sub = await db.subscription.findUnique({ where: { userId } });

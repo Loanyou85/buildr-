@@ -93,6 +93,16 @@ test.describe('Le chemin, de bout en bout', () => {
 
     await page.getByRole('button', { name: 'Commencer' }).click();
 
+    // --- Les offres, juste après la recommandation ---
+    await page.waitForURL('**/offres**');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Jusqu’où veux-tu aller');
+    await expect(page.getByRole('heading', { level: 2 })).toHaveCount(3);
+    await expect(page.getByText('29 €')).toBeVisible();
+    // Une seule offre est mise en avant : l'orange ne désigne qu'une action.
+    await expect(page.locator('.bg-signal')).toHaveCount(1);
+
+    await page.getByRole('button', { name: 'Commencer gratuitement' }).click();
+
     // --- Aujourd'hui ---
     await page.waitForURL('**/app');
     await expect(page.getByText('JOUR 1')).toBeVisible();
@@ -142,6 +152,29 @@ test.describe('Le chemin, de bout en bout', () => {
     expect(nextStep.status).toBe('available');
   });
 
+  test('une offre payante enregistre le choix sans jamais simuler un paiement', async ({ page }) => {
+    const email = 'e2e-offres@nexteo.test';
+    const user = await createAccount({ email });
+    await completeProfile(user.id);
+    await signIn(page, email);
+
+    await page.goto('/recommandation');
+    await page.getByRole('button', { name: 'Commencer' }).click();
+    await page.waitForURL('**/offres**');
+
+    await page.getByRole('button', { name: 'Choisir Parcours' }).click();
+    await page.waitForURL(/paiement=indisponible/);
+    await expect(page.getByText(/aucun montant ne t’a été débité/)).toBeVisible();
+
+    const subscription = await db.subscription.findUniqueOrThrow({ where: { userId: user.id } });
+    // L'intention est retenue, l'accès ne l'est pas.
+    expect(subscription.intendedPlan).toBe('pro');
+    expect(subscription.plan).toBe('free');
+
+    await page.goto('about:blank');
+    await cleanupUser(email);
+  });
+
   test('la progression ne recule jamais', async ({ page }) => {
     const email = 'e2e-progression@nexteo.test';
     const user = await createAccount({ email, pro: true });
@@ -150,6 +183,8 @@ test.describe('Le chemin, de bout en bout', () => {
 
     await page.goto('/recommandation');
     await page.getByRole('button', { name: 'Commencer' }).click();
+    await page.waitForURL('**/offres**');
+    await page.getByRole('button', { name: 'Commencer gratuitement' }).click();
     await page.waitForURL('**/app');
 
     const journey = await db.userJourney.findFirstOrThrow({ where: { userId: user.id } });

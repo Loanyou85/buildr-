@@ -41,6 +41,7 @@ disponible si ses variables sont renseignées.
 | `ADMIN_EMAILS` | e-mails promus `role=admin` à la création du compte |
 | `CRON_SECRET` | protège `POST /api/notifications/run` |
 | `SEED_SECRET` | ouvre `POST /api/admin/initialiser` le temps d'initialiser la base. Non défini = route fermée |
+| `STRIPE_SECRET_KEY` | active le paiement des offres. Non défini = le choix d'une offre payante est enregistré mais rien n'est débité |
 
 ## Déployer
 

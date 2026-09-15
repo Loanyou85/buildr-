@@ -666,6 +666,7 @@ model AssistantMessage {
 enum Plan {
   free
   pro
+  illimite
 }
 
 enum SubscriptionStatus {
@@ -679,6 +680,9 @@ model Subscription {
   plan             Plan               @default(free)
   status           SubscriptionStatus @default(active)
   currentPeriodEnd DateTime?
+  /// Offre choisie sur l'écran des offres, en attente d'un paiement effectif.
+  intendedPlan     Plan?
+  intendedAt       DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -1,0 +1,78 @@
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { auth } from '@/server/auth';
+import { db } from '@/server/db';
+import { OFFERS, offerFor } from '@/lib/offers';
+import { OfferCards } from '@/components/app/offer-cards';
+
+export const dynamic = 'force-dynamic';
+
+/**
+ * Les offres, présentées juste après la recommandation : l'utilisateur sait
+ * déjà quelle activité lui correspond et ce que contient le parcours. Il paie
+ * en sachant ce qu'il achète, ce qui est aussi ce que promet la landing —
+ * le diagnostic reste gratuit.
+ */
+export default async function OffersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ paiement?: string; offre?: string; raison?: string }>;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) redirect('/connexion');
+
+  const { paiement, offre, raison } = await searchParams;
+
+  const [subscription, userJourney] = await Promise.all([
+    db.subscription.findUnique({ where: { userId: session.user.id } }),
+    db.userJourney.findFirst({
+      where: { userId: session.user.id },
+      orderBy: { startedAt: 'desc' },
+      include: { journey: { include: { businessModel: true } } },
+    }),
+  ]);
+
+  const businessName = userJourney?.journey.businessModel.name ?? null;
+  const pending = offre ? offerFor(offre as never) : null;
+
+  return (
+    <div className="min-h-dvh bg-beton-100">
+      <main className="mx-auto max-w-5xl px-5 py-14">
+        {businessName ? (
+          <p className="text-sm text-beton-600">Ton activité : {businessName}</p>
+        ) : null}
+        <h1 className="mt-2 text-3xl">Jusqu’où veux-tu aller ?</h1>
+        <p className="prose-nexteo mt-4 text-lg text-beton-600">
+          Ton parcours est prêt. Tu peux commencer gratuitement et voir par toi-même, ou prendre le
+          chemin complet tout de suite.
+        </p>
+
+        {raison === 'plusieurs-parcours' ? (
+          <p className="mt-6 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
+            Suivre une deuxième activité en parallèle fait partie de l’offre Illimité. Ton parcours
+            actuel reste intact quoi qu’il arrive.
+          </p>
+        ) : null}
+
+        {paiement === 'indisponible' && pending ? (
+          <p className="prose-nexteo mt-6 rounded-card border border-beton-300 bg-blanc p-4 text-sm text-encre">
+            Ton choix de l’offre {pending.name} est enregistré, mais le paiement n’est pas encore
+            ouvert — aucun montant ne t’a été débité. Tu peux commencer avec l’offre Découverte en
+            attendant : ta progression sera conservée quand tu passeras à l’offre complète.
+          </p>
+        ) : null}
+
+        <OfferCards offers={OFFERS} currentPlan={subscription?.plan ?? 'free'} />
+
+        <p className="prose-nexteo mt-10 text-sm text-beton-600">
+          Sans engagement, résiliable à tout moment. Ta progression et tes données restent les tiennes,
+          exportables et supprimables depuis{' '}
+          <Link href="/app/compte" className="text-acier underline-offset-4 hover:underline">
+            ton compte
+          </Link>
+          .
+        </p>
+      </main>
+    </div>
+  );
+}

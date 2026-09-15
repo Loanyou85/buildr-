@@ -12,6 +12,7 @@ import { DIMENSION_LABELS, type BusinessScore } from '@/lib/matching/types';
 import { askAI } from '@/lib/ai/client';
 import { stripForbiddenClaims } from '@/lib/guardrails';
 import { instantiateJourney } from '@/server/journey';
+import { can, FEATURES } from '@/server/features';
 import { rejectionSchema } from '@/lib/validation/onboarding';
 import { MAX_REJECTIONS } from '@/lib/recommendation-policy';
 
@@ -108,6 +109,13 @@ export async function acceptRecommendation(formData: FormData): Promise<void> {
     data: { status: 'accepted' },
   });
 
+  // Suivre une deuxième activité en parallèle fait partie de l'offre Illimité.
+  const existing = await db.userJourney.findFirst({ where: { userId: user.id } });
+  if (existing && existing.journeyId && !(await can(user.id, FEATURES.multipleJourneys))) {
+    await db.recommendation.update({ where: { id: recommendation.id }, data: { status: 'proposed' } });
+    redirect('/offres?raison=plusieurs-parcours');
+  }
+
   const userJourney = await instantiateJourney(user.id, recommendation.businessModelId);
   if (!userJourney) {
     // Aucun parcours publié pour ce business : on ne laisse pas l'utilisateur
@@ -117,7 +125,8 @@ export async function acceptRecommendation(formData: FormData): Promise<void> {
   }
 
   revalidatePath('/app');
-  redirect('/app');
+  // Le parcours existe, l'utilisateur voit maintenant jusqu'où il veut aller.
+  redirect('/offres');
 }
 
 export async function rejectRecommendation(formData: FormData): Promise<void> {

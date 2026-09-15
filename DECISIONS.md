@@ -99,3 +99,18 @@ compte plus que la décision.
   distinguer les deux cas revient à confirmer qu'une adresse existe.
 - **Le logo est « le cap »** : un escalier tracé d'un seul trait avec un carré posé au sommet,
   la marche qui n'est pas encore franchie, seule à porter l'orange.
+
+## Offres
+
+- **Trois niveaux plutôt que deux.** Découverte (gratuit), Parcours (29 €/mois), Illimité
+  (59 €/mois). Le niveau supérieur repose sur des droits que le produit sait réellement
+  appliquer — plusieurs activités en parallèle, toutes les variantes de parcours, assistance
+  sans quota — et non sur des promesses invérifiables.
+- **Le paywall arrive après la recommandation**, pas avant. Placé plus tôt il convertirait
+  davantage, mais la landing promet un diagnostic gratuit et l'utilisateur paierait sans
+  savoir ce qu'il achète. Le parcours est instancié avant l'écran des offres : les trois
+  premières étapes restent accessibles quoi qu'il arrive.
+- **Aucun paiement n'est simulé.** Sans prestataire configuré, choisir une offre payante
+  enregistre l'intention (`Subscription.intendedPlan`) et le dit franchement : « aucun montant
+  ne t'a été débité ». Le point de branchement est isolé dans une seule fonction. Un test
+  vérifie que l'accès n'est pas accordé.

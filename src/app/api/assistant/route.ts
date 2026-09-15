@@ -3,6 +3,7 @@ import { db } from '@/server/db';
 import { answerWithContext, type AssistantContext } from '@/lib/ai/assistant';
 import { assistantMessageSchema } from '@/lib/validation/onboarding';
 import { can, FEATURES } from '@/server/features';
+import { PRO_ASSISTANT_MONTHLY_LIMIT } from '@/lib/offers';
 import { formatEuros } from '@/lib/utils';
 
 /**
@@ -27,8 +28,26 @@ export async function POST(request: Request) {
   if (!allowed) {
     return Response.json({
       answer:
-        'L’assistance sur chaque étape fait partie de Nexteo Pro. En attendant, tout ce qu’il te faut est écrit dans l’étape : les actions sont numérotées et exécutables telles quelles.',
+        'L’assistance sur chaque étape fait partie de l’offre Parcours. En attendant, tout ce qu’il te faut est écrit dans l’étape : les actions sont numérotées et exécutables telles quelles.',
     });
+  }
+
+  // L'offre Parcours inclut un nombre de questions par mois ; l'offre Illimité
+  // lève cette limite.
+  if (!(await can(session.user.id, FEATURES.unlimitedAssistant))) {
+    const since = new Date();
+    since.setDate(1);
+    since.setHours(0, 0, 0, 0);
+
+    const asked = await db.assistantMessage.count({
+      where: { role: 'user', createdAt: { gte: since }, thread: { userId: session.user.id } },
+    });
+
+    if (asked >= PRO_ASSISTANT_MONTHLY_LIMIT) {
+      return Response.json({
+        answer: `Tu as utilisé tes ${PRO_ASSISTANT_MONTHLY_LIMIT} questions du mois. Elles se renouvellent le 1er du mois prochain, et l’offre Illimité les lève complètement. D’ici là, l’étape contient déjà toutes les actions à faire, dans l’ordre.`,
+      });
+    }
   }
 
   const step = await db.step.findUnique({

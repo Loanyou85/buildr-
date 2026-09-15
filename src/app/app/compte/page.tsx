@@ -9,6 +9,8 @@ import { deleteMyAccount, updateNotificationPrefs } from '@/server/actions/accou
 import { toggleAdventureVisibility } from '@/server/actions/journey';
 import { ageGate } from '@/lib/guardrails';
 import { formatDateFr } from '@/lib/utils';
+import { offerFor } from '@/lib/offers';
+import Link from 'next/link';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,11 +24,12 @@ export default async function AccountPage({
 
   const { erreur } = await searchParams;
 
-  const [user, profile, adventure, prefs] = await Promise.all([
+  const [user, profile, adventure, prefs, subscription] = await Promise.all([
     db.user.findUniqueOrThrow({ where: { id: session.user.id } }),
     db.profile.findUnique({ where: { userId: session.user.id } }),
     db.adventure.findUnique({ where: { userId: session.user.id } }),
     db.notificationPref.findUnique({ where: { userId: session.user.id } }),
+    db.subscription.findUnique({ where: { userId: session.user.id } }),
   ]);
 
   const gate = ageGate(profile?.age);
@@ -167,9 +170,13 @@ export default async function AccountPage({
             Se déconnecter
           </Button>
         </form>
-        <Badge variant="outline" className="mt-4">
-          Plan {session.user.role === 'admin' ? 'administrateur' : 'gratuit'}
-        </Badge>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Badge variant="outline">Offre {offerFor(subscription?.plan ?? 'free').name}</Badge>
+          {session.user.role === 'admin' ? <Badge variant="acier">Administrateur</Badge> : null}
+          <Link href="/offres" className="text-sm text-acier underline-offset-4 hover:underline">
+            Voir les offres
+          </Link>
+        </div>
       </section>
     </AppShell>
   );

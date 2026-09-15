@@ -557,13 +557,18 @@ export const BUSINESS_MODELS: BusinessSeed[] = [
   },
 ];
 
-export const FEATURE_FLAGS: Array<{ key: string; label: string; plans: Array<'free' | 'pro'> }> = [
-  { key: 'diagnostic.full', label: 'Diagnostic complet', plans: ['free', 'pro'] },
-  { key: 'recommendation.view', label: 'Recommandation', plans: ['free', 'pro'] },
-  { key: 'journey.preview', label: 'Aperçu du parcours', plans: ['free', 'pro'] },
-  { key: 'journey.full', label: 'Parcours complet', plans: ['pro'] },
-  { key: 'assistant.contextual', label: 'Assistance contextuelle', plans: ['pro'] },
-  { key: 'notifications.reminders', label: 'Rappels et notifications', plans: ['pro'] },
-  { key: 'adventure.public', label: 'Aventure publique', plans: ['free', 'pro'] },
-  { key: 'history.full', label: 'Historique complet', plans: ['pro'] },
+type PlanKey = 'free' | 'pro' | 'illimite';
+
+export const FEATURE_FLAGS: Array<{ key: string; label: string; plans: PlanKey[] }> = [
+  { key: 'diagnostic.full', label: 'Diagnostic complet', plans: ['free', 'pro', 'illimite'] },
+  { key: 'recommendation.view', label: 'Recommandation', plans: ['free', 'pro', 'illimite'] },
+  { key: 'journey.preview', label: 'Aperçu du parcours', plans: ['free', 'pro', 'illimite'] },
+  { key: 'adventure.public', label: 'Aventure publique', plans: ['free', 'pro', 'illimite'] },
+  { key: 'journey.full', label: 'Parcours complet', plans: ['pro', 'illimite'] },
+  { key: 'assistant.contextual', label: 'Assistance contextuelle', plans: ['pro', 'illimite'] },
+  { key: 'notifications.reminders', label: 'Rappels et notifications', plans: ['pro', 'illimite'] },
+  { key: 'history.full', label: 'Historique complet', plans: ['pro', 'illimite'] },
+  { key: 'journey.multiple', label: 'Plusieurs activités en parallèle', plans: ['illimite'] },
+  { key: 'journey.variants', label: 'Toutes les variantes de parcours', plans: ['illimite'] },
+  { key: 'assistant.unlimited', label: 'Assistance sans limite', plans: ['illimite'] },
 ];
