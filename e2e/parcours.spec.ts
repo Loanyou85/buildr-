@@ -271,3 +271,34 @@ test.describe('le compte et le parcours', () => {
     await supprimerCompteDeTest(email);
   });
 });
+
+test.describe('quand quelque chose casse', () => {
+  test.use({ viewport: MOBILE });
+
+  test('l’état du site est lisible en une adresse', async ({ request }) => {
+    const reponse = await request.get('/api/sante');
+    expect(reponse.status(), 'la base doit répondre et le contenu être en place').toBe(200);
+
+    const sante = await reponse.json();
+    expect(sante.base).toBe('joignable');
+    expect(sante.contenu).toBe('complet');
+    expect(sante.details.phases).toBe(13);
+    expect(sante.details.archetypes).toBeGreaterThan(0);
+    expect(sante.details.gabarits).toBeGreaterThan(0);
+
+    // Rien de sensible ne doit fuir : des booléens et des comptes, pas de valeurs.
+    const brut = JSON.stringify(sante);
+    expect(brut).not.toMatch(/postgres|sk_|whsec_|password/i);
+  });
+
+  test('une adresse inconnue donne un écran soigné, pas une erreur brute', async ({ page }) => {
+    const reponse = await page.goto('/cette-page-nexiste-pas');
+    expect(reponse?.status()).toBe(404);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Cette page n’existe pas');
+    await expect(page.getByRole('link', { name: 'Revenir à l’accueil' })).toBeVisible();
+
+    const texte = await page.locator('body').innerText();
+    // Aucun détail technique visible.
+    expect(texte).not.toMatch(/stack|webpack|\.tsx|at Object\./i);
+  });
+});
